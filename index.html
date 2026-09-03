@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kisan Card – Govt Style</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  </head>
+  <body>
+    <div class="form-box">
+      <h3>Farmer Details</h3>
+
+      <input id="cardInput" placeholder="Card Number" oninput="setID(this.value)" />
+
+      <input id="nameInput" placeholder="Name (English)" oninput="translateName(this.value)" />
+      <input placeholder="नाव (मराठी)" oninput="document.getElementById('name_mr').innerText=this.value" />
+
+      <input id="fatherInput" placeholder="Father Name (English)" oninput="translateFather(this.value)" />
+      <input placeholder="वडिलांचे नाव (मराठी)" oninput="document.getElementById('father_mr').innerText=this.value" />
+
+      <input id="addressInput" placeholder="Address" oninput="document.getElementById('address').innerText=this.value" />
+
+      <input id="aadhaarInput" placeholder="Aadhaar Number" maxlength="14" oninput="this.value=this.value.replace(/\D/g,'').replace(/(\d{4})(?=\d)/g,'$1 ').trim(); document.getElementById('aadhaar').innerText=this.value" />
+
+      <input id="villageInput" placeholder="Village" oninput="document.getElementById('village').innerText=this.value" />
+      <input id="surveyInput" placeholder="Survey" oninput="document.getElementById('survey').innerText=this.value" />
+      <input id="subSurveyInput" placeholder="Sub Survey" oninput="document.getElementById('sub').innerText=this.value" />
+      <input id="areaInput" placeholder="Area (Hectare)" oninput="document.getElementById('area').innerText=this.value" />
+
+      <input type="file" accept="image/*" onchange="loadPhoto(event)" />
+    </div>
+
+    <div class="card" id="card">
+      <div class="leaf"></div>
+
+      <div class="top">
+        <h2>KISAN CARD</h2>
+        <img class="emblem" src="https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg" alt="Emblem" />
+      </div>
+
+      <div class="details">
+        <p><b>Kisan Name :</b> <span id="name_en">Example Name</span></p>
+        <p><b>Marathi Name :</b> <span id="name_mr">उदाहरण नाव</span></p>
+        <p><b>Father Name :</b> <span id="father_en">Example Name</span></p>
+        <p><b>Father Marathi :</b> <span id="father_mr">उदाहरण नाव</span></p>
+        <p><b>Address :</b> <span id="address">ABC Street</span></p>
+      </div>
+
+      <p class="aadhaar"><b>Aadhaar No :</b> <span id="aadhaar">XXXX XXXX XXXX</span></p>
+
+      <div class="right-box">
+        <img id="photo" class="photo" alt="Farmer photo" />
+      </div>
+
+      <div class="id" id="fid">1234-XXXX-5457</div>
+
+      <div class="bottom-strip">
+        <span class="agri-text">AGRI STACK</span>
+      </div>
+    </div>
+
+    <div class="card back" id="cardBack">
+      <div class="back-header">
+        <div class="logo">A</div>
+
+        <div>
+          <h3>Agri <span>Card</span></h3>
+          <p>Information Card for Every Farmer</p>
+        </div>
+
+        <div class="farmer-id">
+          <b>FARMER ID</b>
+          <p>Information Card</p>
+        </div>
+      </div>
+
+      <div class="land">
+        <h4>Land Details</h4>
+
+        <table>
+          <tr>
+            <th>Village</th>
+            <th>Survey</th>
+            <th>Sub Survey</th>
+            <th>Total Area In Hectare</th>
+          </tr>
+
+          <tr>
+            <td id="village">Takarkheda</td>
+            <td id="survey">213</td>
+            <td id="sub">2</td>
+            <td id="area">1.08</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="bottom">AGRI STACK</div>
+    </div>
+
+    <button class="btn" onclick="downloadPDF()">Download PDF</button>
+    <button class="btn" onclick="printCard()">Print Card</button>
+
+    <script src="script.js"></script>
+  </body>
+</html>

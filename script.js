@@ -1,0 +1,80 @@
+function loadPhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const photo = document.getElementById('photo');
+  if (photo) {
+    photo.src = URL.createObjectURL(file);
+  }
+}
+
+function setID(val) {
+  const fid = document.getElementById('fid');
+  if (fid) {
+    fid.innerText = val || '1234-XXXX-5457';
+  }
+
+  const qr = document.getElementById('qr');
+  if (qr) {
+    qr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(val || '');
+  }
+}
+
+function downloadPDF() {
+  html2pdf()
+    .set({
+      margin: 0,
+      filename: 'Kisan_Card_Govt.pdf',
+      image: { type: 'jpeg', quality: 1 },
+      html2canvas: { scale: 3 },
+      jsPDF: { unit: 'mm', format: [85.6, 54], orientation: 'landscape' }
+    })
+    .from(document.getElementById('card'))
+    .save();
+}
+
+function printCard() {
+  window.print();
+}
+
+async function translateName(text) {
+  const nameEn = document.getElementById('name_en');
+  const nameMr = document.getElementById('name_mr');
+
+  if (nameEn) nameEn.innerText = text;
+
+  if (text.length > 0) {
+    try {
+      const res = await fetch(
+        'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=mr&dt=t&q=' + encodeURIComponent(text)
+      );
+      const data = await res.json();
+      if (nameMr) nameMr.innerText = data?.[0]?.[0]?.[0] || '';
+    } catch (error) {
+      if (nameMr) nameMr.innerText = '';
+    }
+  } else if (nameMr) {
+    nameMr.innerText = '';
+  }
+}
+
+async function translateFather(text) {
+  const fatherEn = document.getElementById('father_en');
+  const fatherMr = document.getElementById('father_mr');
+
+  if (fatherEn) fatherEn.innerText = text;
+
+  if (text.length > 0) {
+    try {
+      const res = await fetch(
+        'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=mr&dt=t&q=' + encodeURIComponent(text)
+      );
+      const data = await res.json();
+      if (fatherMr) fatherMr.innerText = data?.[0]?.[0]?.[0] || '';
+    } catch (error) {
+      if (fatherMr) fatherMr.innerText = '';
+    }
+  } else if (fatherMr) {
+    fatherMr.innerText = '';
+  }
+}

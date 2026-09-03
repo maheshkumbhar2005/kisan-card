@@ -1,0 +1,240 @@
+body {
+  background: #dcdcdc;
+  font-family: Arial, sans-serif;
+}
+
+.form-box {
+  width: 360px;
+  margin: 15px auto;
+  background: #fff;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.form-box input {
+  width: 100%;
+  padding: 6px;
+  margin: 4px 0;
+  box-sizing: border-box;
+}
+
+.card {
+  width: 85.6mm;
+  height: 54mm;
+  background: #fff;
+  border: 2px solid #2e7d32;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  margin: 10px;
+  display: inline-block;
+}
+
+.leaf {
+  position: absolute;
+  right: -6mm;
+  top: -8mm;
+  width: 55mm;
+  height: 28mm;
+  background: #3aa73a;
+  border-radius: 80% 0 80% 0;
+  transform: rotate(15deg);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  padding: 4mm;
+}
+
+.top h2 {
+  color: #2e7d32;
+  font-size: 14px;
+  margin: 0;
+}
+
+.emblem {
+  height: 18px;
+  margin-left: 6px;
+}
+
+.details {
+  padding-left: 5mm;
+  font-size: 9px;
+}
+
+.details p {
+  margin: 3px 0;
+}
+
+.aadhaar {
+  position: absolute;
+  bottom: 20mm;
+  left: 6mm;
+  font-size: 9px;
+}
+
+.right-box {
+  position: absolute;
+  right: 6mm;
+  top: 18mm;
+  text-align: center;
+}
+
+.photo {
+  width: 18mm;
+  height: 20mm;
+  border: 1px solid #000;
+  object-fit: cover;
+  background: #f3f3f3;
+}
+
+.id {
+  position: absolute;
+  bottom: 14mm;
+  left: 6mm;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.bottom-strip {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 10mm;
+  background: #a5d6a7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agri-text {
+  color: #1b5e20;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 3px;
+}
+
+.btn {
+  display: block;
+  margin: 10px auto;
+  padding: 8px 20px;
+  background: #2e7d32;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.back-header {
+  background: #28a745;
+  color: #fff;
+  padding: 4mm;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.back-header h3 {
+  margin: 0;
+  font-size: 12px;
+}
+
+.back-header span {
+  color: #ffb400;
+}
+
+.back-header p {
+  margin: 0;
+  font-size: 7px;
+}
+
+.logo {
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  color: #28a745;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.farmer-id {
+  text-align: right;
+  font-size: 8px;
+}
+
+.land {
+  padding: 4mm;
+  font-size: 8px;
+}
+
+.land h4 {
+  color: #28a745;
+}
+
+.land table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.land th {
+  background: #28a745;
+  color: #fff;
+  padding: 2px;
+}
+
+.land td {
+  background: #e8f3e8;
+  padding: 2px;
+  text-align: center;
+}
+
+.note {
+  display: none;
+}
+
+.bottom {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 10mm;
+  background: #a5d6a7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1b5e20;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+@media print {
+  .form-box,
+  .btn {
+    display: none;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .card {
+    display: inline-block;
+    margin: 5px;
+    page-break-inside: avoid;
+    page-break-after: avoid;
+    border: 2px solid #2e7d32 !important;
+  }
+
+  .leaf,
+  .bottom-strip,
+  .back-header,
+  .bottom {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
