@@ -318,11 +318,50 @@ body::before {
   box-shadow: 0 0 0 3px rgba(88, 164, 119, 0.14);
 }
 
-.form-box input[type="file"] {
-  margin-top: 13px;
-  padding: 8px;
-  border-style: dashed;
-  background: transparent;
+.photo-upload {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--line);
+}
+
+.photo-upload label {
+  display: block;
+  color: #52665a;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.photo-upload p {
+  max-width: 180px;
+  margin: 5px 0 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#photoInput {
+  display: none;
+}
+
+.photo-button {
+  padding: 8px 10px;
+  border: 1px solid var(--green);
+  border-radius: 7px;
+  color: var(--green-dark);
+  background: #fff;
+  cursor: pointer;
+  font: 700 10px "DM Sans", Arial, sans-serif;
+}
+
+.photo-button.remove {
+  border-color: #e4d5d0;
+  color: #9b5849;
 }
 
 .card {
@@ -373,6 +412,14 @@ body::before {
 
   .form-box {
     text-align: left;
+  }
+
+  .photo-upload {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .photo-upload > div {
+    grid-column: 1 / -1;
   }
 
   .card {

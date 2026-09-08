@@ -9,6 +9,24 @@ function loadPhoto(e) {
     photo.src = photo.dataset.objectUrl;
     photo.alt = 'Uploaded farmer photo';
   }
+
+  const photoName = document.getElementById('photoName');
+  if (photoName) photoName.innerText = file.name;
+}
+
+function resetPhoto() {
+  const photo = document.getElementById('photo');
+  const photoInput = document.getElementById('photoInput');
+  const photoName = document.getElementById('photoName');
+
+  if (photo?.dataset.objectUrl) URL.revokeObjectURL(photo.dataset.objectUrl);
+  if (photo) {
+    photo.removeAttribute('data-object-url');
+    photo.src = 'farmer-placeholder.svg';
+    photo.alt = 'Farmer photo placeholder';
+  }
+  if (photoInput) photoInput.value = '';
+  if (photoName) photoName.innerText = 'Default image selected';
 }
 
 function setID(val) {

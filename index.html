@@ -28,7 +28,15 @@
       <input id="subSurveyInput" placeholder="Sub Survey" oninput="document.getElementById('sub').innerText=this.value" />
       <input id="areaInput" placeholder="Area (Hectare)" oninput="document.getElementById('area').innerText=this.value" />
 
-      <input type="file" accept="image/*" onchange="loadPhoto(event)" />
+      <div class="photo-upload">
+        <div>
+          <label for="photoInput">Farmer photo</label>
+          <p id="photoName">Default image selected</p>
+        </div>
+        <input id="photoInput" type="file" accept="image/*" onchange="loadPhoto(event)" />
+        <button type="button" class="photo-button" onclick="document.getElementById('photoInput').click()">Change image</button>
+        <button type="button" class="photo-button remove" onclick="resetPhoto()">Remove</button>
+      </div>
     </div>
 
     <div class="card" id="card">
