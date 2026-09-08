@@ -238,3 +238,150 @@ body {
     print-color-adjust: exact;
   }
 }
+
+/* Studio layout and responsive controls */
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --ink: #19352b;
+  --muted: #6d7e75;
+  --green: #16734b;
+  --green-dark: #0d5035;
+  --line: #dbe6dd;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  padding: 38px max(20px, 4vw) 50px;
+  color: var(--ink);
+  background: #f4f7f1;
+  background-image: linear-gradient(135deg, rgba(22, 115, 75, 0.07), transparent 38%), radial-gradient(circle at 88% 12%, rgba(225, 174, 57, 0.14), transparent 25%);
+  font-family: "DM Sans", Arial, sans-serif;
+}
+
+body::before {
+  display: block;
+  width: min(1180px, 100%);
+  margin: 0 auto 27px;
+  color: var(--green);
+  content: "KISAN CARD STUDIO  /  AGRICULTURAL IDENTITY SYSTEM";
+  font: 700 11px "Space Grotesk", Arial, sans-serif;
+  letter-spacing: 0.14em;
+}
+
+.form-box {
+  width: min(420px, 100%);
+  margin: 0 auto 22px;
+  padding: 25px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 45px rgba(46, 72, 55, 0.08);
+}
+
+.form-box h3 {
+  margin: 0 0 19px;
+  color: var(--ink);
+  font: 700 21px "Space Grotesk", Arial, sans-serif;
+}
+
+.form-box h3::after {
+  display: block;
+  width: 40px;
+  height: 3px;
+  margin-top: 10px;
+  border-radius: 10px;
+  background: #d5a83f;
+  content: "";
+}
+
+.form-box input {
+  width: 100%;
+  margin: 5px 0;
+  padding: 11px 12px;
+  border: 1px solid #dce6de;
+  border-radius: 9px;
+  outline: none;
+  color: var(--ink);
+  background: #fbfdf9;
+  font: 500 12px "DM Sans", Arial, sans-serif;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.form-box input:focus {
+  border-color: #58a477;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(88, 164, 119, 0.14);
+}
+
+.form-box input[type="file"] {
+  margin-top: 13px;
+  padding: 8px;
+  border-style: dashed;
+  background: transparent;
+}
+
+.card {
+  margin: 0 9px 22px;
+  border-color: var(--green);
+  box-shadow: 0 12px 24px rgba(43, 67, 50, 0.16);
+  vertical-align: top;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 4px 8px;
+  padding: 11px 17px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: #fff;
+  background: var(--green);
+  box-shadow: 0 8px 16px rgba(22, 115, 75, 0.18);
+  font: 700 12px "DM Sans", Arial, sans-serif;
+  transition: transform 160ms ease, background 160ms ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  background: var(--green-dark);
+}
+
+.btn + .btn {
+  color: var(--green-dark);
+  border-color: var(--line);
+  background: #fff;
+  box-shadow: none;
+}
+
+@media (max-width: 760px) {
+  body {
+    padding: 24px 12px 35px;
+    text-align: center;
+  }
+
+  body::before {
+    margin-bottom: 20px;
+    font-size: 9px;
+  }
+
+  .form-box {
+    text-align: left;
+  }
+
+  .card {
+    margin-right: 4px;
+    margin-left: 4px;
+  }
+}
+
+@media print {
+  body::before {
+    display: none;
+  }
+}
