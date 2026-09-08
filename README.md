@@ -17,13 +17,20 @@ A lightweight browser-based Kisan Card generator for creating and printing farme
 
 ## Run Locally
 
-No build tools are required.
+### Frontend
 
 1. Download or clone the repository.
 2. Open `index.html` in a modern web browser.
 3. Enter the farmer details in the form.
 4. Use **Change image** to upload a farmer photograph.
 5. Use **Download PDF** or **Print Card** when finished.
+
+### API
+
+1. Install dependencies with `npm install`.
+2. Start the server with `npm start`.
+3. Use endpoints such as `GET /health` and `GET /api/farmers`.
+4. Add records with `POST /api/farmers` and update them with `PUT /api/farmers/:id`.
 
 The name translation fields use the Google Translate endpoint and require an internet connection. PDF generation also loads `html2pdf.js` from a CDN.
 
@@ -32,6 +39,8 @@ The name translation fields use the Google Translate endpoint and require an int
 - `index.html` - Page structure, form fields, and card markup
 - `style.css` - Responsive layout, card design, and print styles
 - `script.js` - Live updates, image handling, translation, PDF download, and printing
+- `api.js` - Express API for managing farmer records with file-based storage
+- `server.js` - Starts the API server
 - `farmer-placeholder.svg` - Default image shown before a photo is uploaded
 
 ## Repository
