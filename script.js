@@ -4,7 +4,10 @@ function loadPhoto(e) {
 
   const photo = document.getElementById('photo');
   if (photo) {
-    photo.src = URL.createObjectURL(file);
+    if (photo.dataset.objectUrl) URL.revokeObjectURL(photo.dataset.objectUrl);
+    photo.dataset.objectUrl = URL.createObjectURL(file);
+    photo.src = photo.dataset.objectUrl;
+    photo.alt = 'Uploaded farmer photo';
   }
 }
 

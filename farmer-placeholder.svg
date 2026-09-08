@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 270" role="img" aria-label="Farmer photo placeholder">
+  <rect width="240" height="270" fill="#e8f2e7"/>
+  <circle cx="120" cy="102" r="43" fill="#d49363"/>
+  <path d="M70 96c5-50 95-65 111 0-22-17-73-20-111 0Z" fill="#176044"/>
+  <path d="M52 256c5-67 39-91 68-91s63 24 68 91Z" fill="#d5a83f"/>
+  <path d="M70 196c19 14 81 14 100 0v60H70Z" fill="#16734b"/>
+  <path d="M105 118c10 8 20 8 30 0" fill="none" stroke="#8c4c3a" stroke-linecap="round" stroke-width="4"/>
+  <circle cx="104" cy="101" r="4" fill="#19352b"/>
+  <circle cx="136" cy="101" r="4" fill="#19352b"/>
+  <path d="M0 256h240v14H0z" fill="#b8d6a9"/>
+</svg>

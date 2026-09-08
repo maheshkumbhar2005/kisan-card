@@ -84,9 +84,10 @@ body {
 .photo {
   width: 18mm;
   height: 20mm;
-  border: 1px solid #000;
+  border: 2px solid #d5a83f;
+  border-radius: 4px;
   object-fit: cover;
-  background: #f3f3f3;
+  background: #e8f2e7;
 }
 
 .id {
