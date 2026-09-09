@@ -112,6 +112,14 @@
     <div class="action-buttons">
       <button class="btn" id="downloadBtn" onclick="handleDownload()">Download PDF</button>
       <button class="btn" id="printBtn" onclick="handlePrint()">Print Card</button>
+      <button class="btn btn-save" id="saveBtn" onclick="saveFarmer()">Save Farmer</button>
+    </div>
+
+    <div class="saved-panel" id="savedPanel">
+      <h3>Saved Farmers</h3>
+      <div id="farmerList" class="farmer-list">
+        <p class="empty-msg">No saved farmers yet. Fill the form and click "Save Farmer".</p>
+      </div>
     </div>
 
     <script src="script.js"></script>

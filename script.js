@@ -163,3 +163,136 @@ function handleDownload() {
 function handlePrint() {
   if (validateForm()) printCard();
 }
+
+// ---------------------------------------------------------------------------
+// API integration – save & load farmers
+// ---------------------------------------------------------------------------
+
+const API_BASE = window.location.origin;
+
+async function saveFarmer() {
+  if (!validateForm()) return;
+
+  const body = {
+    farmerName: document.getElementById('nameInput')?.value.trim() || '',
+    fatherName: document.getElementById('fatherInput')?.value.trim() || '',
+    address: document.getElementById('addressInput')?.value.trim() || '',
+    aadhaar: document.getElementById('aadhaarInput')?.value.trim() || '',
+    village: document.getElementById('villageInput')?.value.trim() || '',
+    survey: document.getElementById('surveyInput')?.value.trim() || '',
+    subSurvey: document.getElementById('subSurveyInput')?.value.trim() || '',
+    area: document.getElementById('areaInput')?.value.trim() || '',
+    cardNumber: document.getElementById('cardInput')?.value.trim() || ''
+  };
+
+  try {
+    const res = await fetch(`${API_BASE}/api/farmers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert('Save failed: ' + (err.errors || []).join(', '));
+      return;
+    }
+
+    // Show success message
+    const errorsDiv = document.getElementById('validationErrors');
+    if (errorsDiv) {
+      errorsDiv.innerHTML = '<p class="save-success">Farmer saved successfully!</p>';
+      setTimeout(() => { errorsDiv.innerHTML = ''; }, 3000);
+    }
+
+    loadFarmers();
+  } catch (error) {
+    alert('Could not connect to the API. Make sure the server is running (npm start).');
+  }
+}
+
+async function loadFarmers() {
+  const listDiv = document.getElementById('farmerList');
+  if (!listDiv) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/farmers`);
+    if (!res.ok) return;
+
+    const { farmers } = await res.json();
+
+    if (!farmers || farmers.length === 0) {
+      listDiv.innerHTML = '<p class="empty-msg">No saved farmers yet. Fill the form and click "Save Farmer".</p>';
+      return;
+    }
+
+    listDiv.innerHTML = farmers.map((f) => `
+      <div class="farmer-card" onclick="loadFarmerToForm(${f.id})">
+        <h4>${escapeHtml(f.farmerName || 'Unnamed')}</h4>
+        <p>Father: ${escapeHtml(f.fatherName || '-')}</p>
+        <p>Village: ${escapeHtml(f.village || '-')}</p>
+        <p>Card: ${escapeHtml(f.cardNumber || '-')}</p>
+        <div class="card-actions">
+          <button onclick="event.stopPropagation(); loadFarmerToForm(${f.id})">Load</button>
+          <button class="delete-btn" onclick="event.stopPropagation(); deleteFarmer(${f.id})">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (error) {
+    // API not running — silently ignore
+  }
+}
+
+async function loadFarmerToForm(id) {
+  try {
+    const res = await fetch(`${API_BASE}/api/farmers/${id}`);
+    if (!res.ok) return;
+
+    const { farmer } = await res.json();
+
+    const fields = {
+      cardInput: farmer.cardNumber || '',
+      nameInput: farmer.farmerName || '',
+      fatherInput: farmer.fatherName || '',
+      addressInput: farmer.address || '',
+      aadhaarInput: farmer.aadhaar || '',
+      villageInput: farmer.village || '',
+      surveyInput: farmer.survey || '',
+      subSurveyInput: farmer.subSurvey || '',
+      areaInput: farmer.area || ''
+    };
+
+    Object.entries(fields).forEach(([inputId, value]) => {
+      const el = document.getElementById(inputId);
+      if (el) {
+        el.value = value;
+        el.dispatchEvent(new Event('input'));
+      }
+    });
+
+    // Scroll to form
+    document.querySelector('.form-box')?.scrollIntoView({ behavior: 'smooth' });
+  } catch (error) {
+    // ignore
+  }
+}
+
+async function deleteFarmer(id) {
+  if (!confirm('Delete this farmer record?')) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/farmers/${id}`, { method: 'DELETE' });
+    if (res.ok) loadFarmers();
+  } catch (error) {
+    // ignore
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// Load saved farmers on page load
+document.addEventListener('DOMContentLoaded', loadFarmers);

@@ -474,8 +474,131 @@ body::before {
   text-align: center;
 }
 
+}
+
 @media print {
-  .action-buttons {
+  .action-buttons,
+  .saved-panel {
     display: none;
   }
+}
+
+/* Save button accent */
+.btn-save {
+  background: #d5a83f !important;
+  color: #fff !important;
+  border-color: #d5a83f !important;
+  box-shadow: 0 8px 16px rgba(213, 168, 63, 0.2) !important;
+}
+
+.btn-save:hover {
+  background: #b8912f !important;
+}
+
+/* Saved farmers panel */
+.saved-panel {
+  width: min(800px, 100%);
+  margin: 10px auto 40px;
+  padding: 25px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 45px rgba(46, 72, 55, 0.08);
+}
+
+.saved-panel h3 {
+  margin: 0 0 16px;
+  color: var(--ink);
+  font: 700 18px "Space Grotesk", Arial, sans-serif;
+}
+
+.saved-panel h3::after {
+  display: block;
+  width: 32px;
+  height: 3px;
+  margin-top: 8px;
+  border-radius: 10px;
+  background: var(--green);
+  content: "";
+}
+
+.farmer-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.farmer-card {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fbfdf9;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.farmer-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--green);
+  box-shadow: 0 8px 20px rgba(22, 115, 75, 0.12);
+}
+
+.farmer-card h4 {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.farmer-card p {
+  margin: 2px 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.farmer-card .card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.farmer-card .card-actions button {
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--green-dark);
+  background: #fff;
+  cursor: pointer;
+  font: 600 10px "DM Sans", Arial, sans-serif;
+  transition: background 120ms ease;
+}
+
+.farmer-card .card-actions button:hover {
+  background: #e8f2e7;
+}
+
+.farmer-card .card-actions .delete-btn {
+  color: #9b5849;
+  border-color: #e4d5d0;
+}
+
+.farmer-card .card-actions .delete-btn:hover {
+  background: #fff5f5;
+}
+
+.empty-msg {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.save-success {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: #1b5e20;
+  background: #e8f5e9;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
 }
