@@ -3,7 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kisan Card – Govt Style</title>
+    <meta name="description" content="Kisan Card Studio — Generate, save, and print farmer identity cards with live preview, Marathi translation, and PDF export." />
+    <meta name="keywords" content="Kisan Card, Farmer ID, Agri Stack, Farmer Identity Card, Agriculture" />
+    <title>Kisan Card Studio – Agricultural Identity System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   </head>
@@ -39,8 +44,11 @@
         <button type="button" class="photo-button" onclick="document.getElementById('photoInput').click()">Change image</button>
         <button type="button" class="photo-button remove" onclick="resetPhoto()">Remove</button>
       </div>
+
+      <button type="button" class="btn btn-clear" onclick="clearForm()">Clear Form</button>
     </div>
 
+    <div class="card-preview-area">
     <div class="card" id="card">
       <div class="leaf"></div>
 
@@ -108,18 +116,22 @@
 
       <div class="bottom">AGRI STACK</div>
     </div>
+    </div>
 
     <div class="action-buttons">
-      <button class="btn" id="downloadBtn" onclick="handleDownload()">Download PDF</button>
-      <button class="btn" id="printBtn" onclick="handlePrint()">Print Card</button>
-      <button class="btn btn-save" id="saveBtn" onclick="saveFarmer()">Save Farmer</button>
+      <button class="btn" id="downloadBtn" onclick="handleDownload()">⬇ Download Front PDF</button>
+      <button class="btn" id="downloadBackBtn" onclick="handleDownloadBack()">⬇ Download Back PDF</button>
+      <button class="btn" id="printBtn" onclick="handlePrint()">🖨 Print Card</button>
+      <button class="btn btn-save" id="saveBtn" onclick="saveFarmer()">💾 Save Farmer</button>
     </div>
 
     <div class="saved-panel" id="savedPanel">
       <h3>Saved Farmers</h3>
+      <input id="farmerSearch" class="search-input" placeholder="🔍 Search farmers by name, village, or card number..." oninput="filterFarmers(this.value)" />
       <div id="farmerList" class="farmer-list">
         <p class="empty-msg">No saved farmers yet. Fill the form and click "Save Farmer".</p>
       </div>
+      <p id="farmerCount" class="farmer-count"></p>
     </div>
 
     <script src="script.js"></script>

@@ -175,6 +175,11 @@ function createApp() {
     return res.json({ success: true, deletedId: req.params.id });
   });
 
+  // 404 handler for unknown routes
+  app.use((req, res) => {
+    res.status(404).json({ error: 'Not found', path: req.path });
+  });
+
   return app;
 }
 

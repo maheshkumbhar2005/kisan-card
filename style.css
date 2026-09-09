@@ -468,13 +468,8 @@ body::before {
   font-weight: 600;
 }
 
-.action-buttons {
-  width: min(420px, 100%);
-  margin: 0 auto 30px;
-  text-align: center;
 }
 
-}
 
 @media print {
   .action-buttons,
@@ -601,4 +596,100 @@ body::before {
   font-size: 11px;
   font-weight: 600;
   text-align: center;
+}
+
+/* Card preview area */
+.card-preview-area {
+  width: min(800px, 100%);
+  margin: 0 auto 10px;
+  text-align: center;
+}
+
+/* Clear form button */
+.btn-clear {
+  display: block;
+  width: 100%;
+  margin-top: 14px !important;
+  color: var(--muted) !important;
+  border: 1px dashed var(--line) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 11px !important;
+}
+
+.btn-clear:hover {
+  color: var(--ink) !important;
+  border-color: var(--muted) !important;
+  background: #f8faf6 !important;
+}
+
+/* Search input */
+.search-input {
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  outline: none;
+  color: var(--ink);
+  background: #fbfdf9;
+  font: 500 12px "DM Sans", Arial, sans-serif;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.search-input:focus {
+  border-color: #58a477;
+  box-shadow: 0 0 0 3px rgba(88, 164, 119, 0.14);
+}
+
+/* Farmer count */
+.farmer-count {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: right;
+}
+
+.farmer-count:empty {
+  display: none;
+}
+
+/* Fade-in animation for farmer cards */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.farmer-card {
+  animation: fadeInUp 250ms ease both;
+}
+
+.farmer-card:nth-child(2) { animation-delay: 50ms; }
+.farmer-card:nth-child(3) { animation-delay: 100ms; }
+.farmer-card:nth-child(4) { animation-delay: 150ms; }
+.farmer-card:nth-child(5) { animation-delay: 200ms; }
+
+/* Action buttons responsive */
+.action-buttons {
+  width: min(800px, 100%);
+  margin: 0 auto 30px;
+  text-align: center;
+}
+
+@media print {
+  .action-buttons,
+  .saved-panel,
+  .card-preview-area {
+    display: revert;
+  }
+  .action-buttons,
+  .saved-panel {
+    display: none;
+  }
 }

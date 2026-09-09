@@ -29,6 +29,34 @@ function resetPhoto() {
   if (photoName) photoName.innerText = 'Default image selected';
 }
 
+function clearForm() {
+  const inputs = document.querySelectorAll('.form-box input:not([type="file"])');
+  inputs.forEach((el) => {
+    el.value = '';
+    el.classList.remove('input-error');
+    el.dispatchEvent(new Event('input'));
+  });
+  resetPhoto();
+
+  const errorsDiv = document.getElementById('validationErrors');
+  if (errorsDiv) errorsDiv.innerHTML = '';
+
+  // Reset card preview text
+  const defaults = {
+    name_en: 'Example Name', name_mr: 'उदाहरण नाव',
+    father_en: 'Example Name', father_mr: 'उदाहरण नाव',
+    address: 'ABC Street', aadhaar: 'XXXX XXXX XXXX',
+    village: 'Takarkheda', survey: '213', sub: '2', area: '1.08'
+  };
+  Object.entries(defaults).forEach(([id, text]) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = text;
+  });
+
+  const fid = document.getElementById('fid');
+  if (fid) fid.innerText = '1234-XXXX-5457';
+}
+
 function setID(val) {
   const fid = document.getElementById('fid');
   if (fid) {
@@ -54,51 +82,76 @@ function downloadPDF() {
     .save();
 }
 
+function downloadBackPDF() {
+  html2pdf()
+    .set({
+      margin: 0,
+      filename: 'Kisan_Card_Back.pdf',
+      image: { type: 'jpeg', quality: 1 },
+      html2canvas: { scale: 3 },
+      jsPDF: { unit: 'mm', format: [85.6, 54], orientation: 'landscape' }
+    })
+    .from(document.getElementById('cardBack'))
+    .save();
+}
+
 function printCard() {
   window.print();
 }
 
+// ---------------------------------------------------------------------------
+// Debounce helper for translation calls
+// ---------------------------------------------------------------------------
+
+let _nameTimer = null;
+let _fatherTimer = null;
+
 async function translateName(text) {
   const nameEn = document.getElementById('name_en');
-  const nameMr = document.getElementById('name_mr');
-
   if (nameEn) nameEn.innerText = text;
 
-  if (text.length > 0) {
-    try {
-      const res = await fetch(
-        'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=mr&dt=t&q=' + encodeURIComponent(text)
-      );
-      const data = await res.json();
-      if (nameMr) nameMr.innerText = data?.[0]?.[0]?.[0] || '';
-    } catch (error) {
-      if (nameMr) nameMr.innerText = '';
+  clearTimeout(_nameTimer);
+  _nameTimer = setTimeout(async () => {
+    const nameMr = document.getElementById('name_mr');
+    if (text.length > 0) {
+      try {
+        const res = await fetch(
+          'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=mr&dt=t&q=' + encodeURIComponent(text)
+        );
+        const data = await res.json();
+        if (nameMr) nameMr.innerText = data?.[0]?.[0]?.[0] || '';
+      } catch (error) {
+        if (nameMr) nameMr.innerText = '';
+      }
+    } else if (nameMr) {
+      nameMr.innerText = '';
     }
-  } else if (nameMr) {
-    nameMr.innerText = '';
-  }
+  }, 350);
 }
 
 async function translateFather(text) {
   const fatherEn = document.getElementById('father_en');
-  const fatherMr = document.getElementById('father_mr');
-
   if (fatherEn) fatherEn.innerText = text;
 
-  if (text.length > 0) {
-    try {
-      const res = await fetch(
-        'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=mr&dt=t&q=' + encodeURIComponent(text)
-      );
-      const data = await res.json();
-      if (fatherMr) fatherMr.innerText = data?.[0]?.[0]?.[0] || '';
-    } catch (error) {
-      if (fatherMr) fatherMr.innerText = '';
+  clearTimeout(_fatherTimer);
+  _fatherTimer = setTimeout(async () => {
+    const fatherMr = document.getElementById('father_mr');
+    if (text.length > 0) {
+      try {
+        const res = await fetch(
+          'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=mr&dt=t&q=' + encodeURIComponent(text)
+        );
+        const data = await res.json();
+        if (fatherMr) fatherMr.innerText = data?.[0]?.[0]?.[0] || '';
+      } catch (error) {
+        if (fatherMr) fatherMr.innerText = '';
+      }
+    } else if (fatherMr) {
+      fatherMr.innerText = '';
     }
-  } else if (fatherMr) {
-    fatherMr.innerText = '';
-  }
+  }, 350);
 }
+
 
 // ---------------------------------------------------------------------------
 // Form validation
@@ -160,6 +213,10 @@ function handleDownload() {
   if (validateForm()) downloadPDF();
 }
 
+function handleDownloadBack() {
+  if (validateForm()) downloadBackPDF();
+}
+
 function handlePrint() {
   if (validateForm()) printCard();
 }
@@ -169,6 +226,7 @@ function handlePrint() {
 // ---------------------------------------------------------------------------
 
 const API_BASE = window.location.origin;
+let _cachedFarmers = [];
 
 async function saveFarmer() {
   if (!validateForm()) return;
@@ -185,6 +243,9 @@ async function saveFarmer() {
     cardNumber: document.getElementById('cardInput')?.value.trim() || ''
   };
 
+  const saveBtn = document.getElementById('saveBtn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+
   try {
     const res = await fetch(`${API_BASE}/api/farmers`, {
       method: 'POST',
@@ -198,16 +259,17 @@ async function saveFarmer() {
       return;
     }
 
-    // Show success message
     const errorsDiv = document.getElementById('validationErrors');
     if (errorsDiv) {
-      errorsDiv.innerHTML = '<p class="save-success">Farmer saved successfully!</p>';
+      errorsDiv.innerHTML = '<p class="save-success">✅ Farmer saved successfully!</p>';
       setTimeout(() => { errorsDiv.innerHTML = ''; }, 3000);
     }
 
     loadFarmers();
   } catch (error) {
     alert('Could not connect to the API. Make sure the server is running (npm start).');
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Save Farmer'; }
   }
 }
 
@@ -220,27 +282,53 @@ async function loadFarmers() {
     if (!res.ok) return;
 
     const { farmers } = await res.json();
-
-    if (!farmers || farmers.length === 0) {
-      listDiv.innerHTML = '<p class="empty-msg">No saved farmers yet. Fill the form and click "Save Farmer".</p>';
-      return;
-    }
-
-    listDiv.innerHTML = farmers.map((f) => `
-      <div class="farmer-card" onclick="loadFarmerToForm(${f.id})">
-        <h4>${escapeHtml(f.farmerName || 'Unnamed')}</h4>
-        <p>Father: ${escapeHtml(f.fatherName || '-')}</p>
-        <p>Village: ${escapeHtml(f.village || '-')}</p>
-        <p>Card: ${escapeHtml(f.cardNumber || '-')}</p>
-        <div class="card-actions">
-          <button onclick="event.stopPropagation(); loadFarmerToForm(${f.id})">Load</button>
-          <button class="delete-btn" onclick="event.stopPropagation(); deleteFarmer(${f.id})">Delete</button>
-        </div>
-      </div>
-    `).join('');
+    _cachedFarmers = farmers || [];
+    renderFarmers(_cachedFarmers);
   } catch (error) {
     // API not running — silently ignore
   }
+}
+
+function renderFarmers(farmers) {
+  const listDiv = document.getElementById('farmerList');
+  const countEl = document.getElementById('farmerCount');
+  if (!listDiv) return;
+
+  if (!farmers || farmers.length === 0) {
+    listDiv.innerHTML = '<p class="empty-msg">No saved farmers yet. Fill the form and click "Save Farmer".</p>';
+    if (countEl) countEl.textContent = '';
+    return;
+  }
+
+  if (countEl) countEl.textContent = `${farmers.length} farmer${farmers.length !== 1 ? 's' : ''} saved`;
+
+  listDiv.innerHTML = farmers.map((f) => `
+    <div class="farmer-card" onclick="loadFarmerToForm(${f.id})">
+      <h4>${escapeHtml(f.farmerName || 'Unnamed')}</h4>
+      <p>Father: ${escapeHtml(f.fatherName || '-')}</p>
+      <p>Village: ${escapeHtml(f.village || '-')}</p>
+      <p>Card: ${escapeHtml(f.cardNumber || '-')}</p>
+      <div class="card-actions">
+        <button onclick="event.stopPropagation(); loadFarmerToForm(${f.id})">Load</button>
+        <button class="delete-btn" onclick="event.stopPropagation(); deleteFarmer(${f.id})">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterFarmers(query) {
+  const q = query.toLowerCase().trim();
+  if (!q) {
+    renderFarmers(_cachedFarmers);
+    return;
+  }
+  const filtered = _cachedFarmers.filter((f) =>
+    (f.farmerName || '').toLowerCase().includes(q) ||
+    (f.village || '').toLowerCase().includes(q) ||
+    (f.cardNumber || '').toLowerCase().includes(q) ||
+    (f.fatherName || '').toLowerCase().includes(q)
+  );
+  renderFarmers(filtered);
 }
 
 async function loadFarmerToForm(id) {
@@ -266,11 +354,15 @@ async function loadFarmerToForm(id) {
       const el = document.getElementById(inputId);
       if (el) {
         el.value = value;
+        el.classList.remove('input-error');
         el.dispatchEvent(new Event('input'));
       }
     });
 
-    // Scroll to form
+    // Clear any previous validation errors
+    const errorsDiv = document.getElementById('validationErrors');
+    if (errorsDiv) errorsDiv.innerHTML = '';
+
     document.querySelector('.form-box')?.scrollIntoView({ behavior: 'smooth' });
   } catch (error) {
     // ignore
