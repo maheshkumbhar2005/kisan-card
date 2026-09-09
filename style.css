@@ -168,6 +168,14 @@ body {
   font-size: 8px;
 }
 
+.qr-code {
+  width: 14mm;
+  height: 14mm;
+  margin-top: 1mm;
+  border: 1px solid #ccc;
+  object-fit: contain;
+}
+
 .land {
   padding: 4mm;
   font-size: 8px;
