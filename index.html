@@ -13,20 +13,22 @@
 
       <input id="cardInput" placeholder="Card Number" oninput="setID(this.value)" />
 
-      <input id="nameInput" placeholder="Name (English)" oninput="translateName(this.value)" />
+      <input id="nameInput" placeholder="Name (English) *" data-required="true" oninput="translateName(this.value); clearError(this)" />
       <input placeholder="नाव (मराठी)" oninput="document.getElementById('name_mr').innerText=this.value" />
 
-      <input id="fatherInput" placeholder="Father Name (English)" oninput="translateFather(this.value)" />
+      <input id="fatherInput" placeholder="Father Name (English) *" data-required="true" oninput="translateFather(this.value); clearError(this)" />
       <input placeholder="वडिलांचे नाव (मराठी)" oninput="document.getElementById('father_mr').innerText=this.value" />
 
-      <input id="addressInput" placeholder="Address" oninput="document.getElementById('address').innerText=this.value" />
+      <input id="addressInput" placeholder="Address *" data-required="true" oninput="document.getElementById('address').innerText=this.value; clearError(this)" />
 
-      <input id="aadhaarInput" placeholder="Aadhaar Number" maxlength="14" oninput="this.value=this.value.replace(/\D/g,'').replace(/(\d{4})(?=\d)/g,'$1 ').trim(); document.getElementById('aadhaar').innerText=this.value" />
+      <input id="aadhaarInput" placeholder="Aadhaar Number (12 digits)" maxlength="14" oninput="this.value=this.value.replace(/\D/g,'').replace(/(\d{4})(?=\d)/g,'$1 ').trim(); document.getElementById('aadhaar').innerText=this.value; clearError(this)" />
 
-      <input id="villageInput" placeholder="Village" oninput="document.getElementById('village').innerText=this.value" />
+      <input id="villageInput" placeholder="Village *" data-required="true" oninput="document.getElementById('village').innerText=this.value; clearError(this)" />
       <input id="surveyInput" placeholder="Survey" oninput="document.getElementById('survey').innerText=this.value" />
       <input id="subSurveyInput" placeholder="Sub Survey" oninput="document.getElementById('sub').innerText=this.value" />
       <input id="areaInput" placeholder="Area (Hectare)" oninput="document.getElementById('area').innerText=this.value" />
+
+      <div id="validationErrors" class="validation-errors"></div>
 
       <div class="photo-upload">
         <div>
@@ -107,8 +109,10 @@
       <div class="bottom">AGRI STACK</div>
     </div>
 
-    <button class="btn" onclick="downloadPDF()">Download PDF</button>
-    <button class="btn" onclick="printCard()">Print Card</button>
+    <div class="action-buttons">
+      <button class="btn" id="downloadBtn" onclick="handleDownload()">Download PDF</button>
+      <button class="btn" id="printBtn" onclick="handlePrint()">Print Card</button>
+    </div>
 
     <script src="script.js"></script>
   </body>
