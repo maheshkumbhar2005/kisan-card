@@ -3,233 +3,426 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Kisan Card Studio – Generate, save, edit, and print farmer identity cards with live preview, Marathi translation, and PDF export." />
-    <meta name="keywords" content="Kisan Card, Farmer ID, Agri Stack, Farmer Identity Card, Agriculture" />
-    <title>Kisan Card Studio – Agricultural Identity System</title>
+    <meta name="description" content="Kisan Card Studio & Executive Dashboard – Comprehensive agricultural identity management, live statistics, land analytics, and PVC card issuance." />
+    <meta name="keywords" content="Kisan Card, Farmer ID, Agri Stack, Dashboard, Land Records, Agriculture" />
+    <title>Kisan Card Studio & Executive Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   </head>
   <body>
-    <!-- Top Brand Header -->
+    <!-- Top Brand Header & Navigation Tabs -->
     <header class="app-header">
       <div class="header-container">
         <div class="brand">
           <div class="brand-icon">🌱</div>
           <div>
             <h1>Kisan Card Studio</h1>
-            <p class="subtitle">AgriStack – Farmer Digital Identity System</p>
+            <p class="subtitle">AgriStack – Farmer Digital Identity & Analytics</p>
           </div>
         </div>
 
-        <!-- Quick Stats Widget -->
-        <div class="stats-bar" id="statsBar">
-          <div class="stat-pill">
-            <span class="stat-label">Total Farmers</span>
-            <strong id="statTotal">0</strong>
-          </div>
-          <div class="stat-pill">
-            <span class="stat-label">Villages</span>
-            <strong id="statVillages">0</strong>
-          </div>
-          <div class="stat-pill">
-            <span class="stat-label">Total Land</span>
-            <strong id="statArea">0 Ha</strong>
-          </div>
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs" role="tablist">
+          <button type="button" class="nav-tab active" id="tabDashboard" onclick="switchView('dashboard')">
+            <span class="tab-icon">📊</span> Executive Dashboard
+          </button>
+          <button type="button" class="nav-tab" id="tabStudio" onclick="switchView('studio')">
+            <span class="tab-icon">📇</span> Card Generator
+          </button>
+          <button type="button" class="nav-tab" id="tabRegistry" onclick="switchView('registry')">
+            <span class="tab-icon">📋</span> Farmers Registry
+          </button>
+        </nav>
+
+        <!-- Quick Header Actions -->
+        <div class="header-actions">
+          <button type="button" class="btn btn-sm btn-primary" onclick="switchView('studio'); clearForm();">
+            ➕ New Farmer
+          </button>
+          <button type="button" class="btn btn-sm btn-outline" onclick="exportCSV()">
+            📥 Export CSV
+          </button>
         </div>
       </div>
     </header>
 
-    <main class="main-layout">
-      <!-- Left Column: Form Details -->
-      <section class="form-box">
-        <div class="box-title">
-          <h3>🌾 Farmer Details</h3>
-          <span class="badge">Live Sync</span>
-        </div>
-
-        <div class="form-grid">
-          <div class="field-group">
-            <label for="cardInput">Card Number</label>
-            <input id="cardInput" placeholder="Auto-generated (e.g. KC-1001)" oninput="setID(this.value)" />
+    <!-- VIEW 1: EXECUTIVE PROFESSIONAL DASHBOARD -->
+    <section id="viewDashboard" class="view-section active">
+      <div class="dashboard-container">
+        <!-- Dashboard Welcome Bar -->
+        <div class="dash-welcome-bar">
+          <div>
+            <h2>Agricultural Identity & Land Registry Dashboard</h2>
+            <p class="text-muted">Real-time statistics, village-wise coverage, landholding analytics, and recent registrations.</p>
           </div>
-
-          <div class="field-group">
-            <label for="nameInput">Farmer Name (English) *</label>
-            <input id="nameInput" placeholder="e.g. Ramesh Patil" data-required="true" oninput="translateName(this.value); clearError(this)" />
-          </div>
-
-          <div class="field-group">
-            <label for="nameMrInput">Farmer Name (Marathi / मराठी)</label>
-            <input id="nameMrInput" placeholder="उदा. रमेश पाटील" oninput="document.getElementById('name_mr').innerText=this.value || 'उदा. रमेश पाटील'" />
-          </div>
-
-          <div class="field-group">
-            <label for="fatherInput">Father's Name (English) *</label>
-            <input id="fatherInput" placeholder="e.g. Suresh Patil" data-required="true" oninput="translateFather(this.value); clearError(this)" />
-          </div>
-
-          <div class="field-group">
-            <label for="fatherMrInput">Father's Name (Marathi / मराठी)</label>
-            <input id="fatherMrInput" placeholder="उदा. सुरेश पाटील" oninput="document.getElementById('father_mr').innerText=this.value || 'उदा. सुरेश पाटील'" />
-          </div>
-
-          <div class="field-group full-width">
-            <label for="addressInput">Address *</label>
-            <input id="addressInput" placeholder="Village / Taluka / District" data-required="true" oninput="document.getElementById('address').innerText=this.value || 'ABC Street'; clearError(this)" />
-          </div>
-
-          <div class="field-group full-width">
-            <label for="aadhaarInput">Aadhaar Number (12 digits)</label>
-            <div class="input-with-action">
-              <input id="aadhaarInput" placeholder="XXXX XXXX XXXX" maxlength="14" oninput="handleAadhaarInput(this)" />
-              <label class="checkbox-inline">
-                <input type="checkbox" id="maskAadhaarCheck" checked onchange="toggleAadhaarMask()" />
-                <span>Mask</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="field-group">
-            <label for="villageInput">Village *</label>
-            <input id="villageInput" placeholder="e.g. Takarkheda" data-required="true" oninput="document.getElementById('village').innerText=this.value || 'Takarkheda'; clearError(this)" />
-          </div>
-
-          <div class="field-group">
-            <label for="surveyInput">Survey No.</label>
-            <input id="surveyInput" placeholder="e.g. 213" oninput="document.getElementById('survey').innerText=this.value || '213'" />
-          </div>
-
-          <div class="field-group">
-            <label for="subSurveyInput">Sub-Survey / Hissa</label>
-            <input id="subSurveyInput" placeholder="e.g. 2" oninput="document.getElementById('sub').innerText=this.value || '2'" />
-          </div>
-
-          <div class="field-group">
-            <label for="areaInput">Land Area (Hectare)</label>
-            <input id="areaInput" type="number" step="0.01" placeholder="e.g. 1.08" oninput="document.getElementById('area').innerText=this.value || '1.08'" />
+          <div class="dash-refresh-action">
+            <button type="button" class="btn btn-sm btn-outline" onclick="loadDashboardData(true)">
+              🔄 Refresh Analytics
+            </button>
           </div>
         </div>
 
-        <div id="validationErrors" class="validation-errors"></div>
-
-        <!-- Photo Upload & Camera Capture -->
-        <div class="photo-upload-card">
-          <div class="photo-info">
-            <label>Farmer Photo</label>
-            <p id="photoName">Default image selected</p>
+        <!-- KPI Metric Cards Grid -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap kpi-green">👥</div>
+            <div class="kpi-content">
+              <span class="kpi-label">Total Registered Farmers</span>
+              <h3 id="dashTotalFarmers" class="kpi-value">0</h3>
+              <span class="kpi-subtext">AgriStack Identity Profiles</span>
+            </div>
           </div>
-          <div class="photo-actions">
-            <input id="photoInput" type="file" accept="image/*" onchange="loadPhoto(event)" style="display:none" />
-            <button type="button" class="btn-sm" onclick="document.getElementById('photoInput').click()">📁 Upload</button>
-            <button type="button" class="btn-sm" onclick="openCameraModal()">📷 Camera</button>
-            <button type="button" class="btn-sm btn-danger-soft" onclick="resetPhoto()">✕ Reset</button>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap kpi-blue">✅</div>
+            <div class="kpi-content">
+              <span class="kpi-label">Active Verified Farmers</span>
+              <h3 id="dashActiveFarmers" class="kpi-value">0</h3>
+              <span class="kpi-subtext" id="dashActivePercent">100% Active Status</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap kpi-amber">🏡</div>
+            <div class="kpi-content">
+              <span class="kpi-label">Villages Covered</span>
+              <h3 id="dashVillages" class="kpi-value">0</h3>
+              <span class="kpi-subtext">District Geographic Reach</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap kpi-purple">🌾</div>
+            <div class="kpi-content">
+              <span class="kpi-label">Total Land Area</span>
+              <h3 id="dashTotalArea" class="kpi-value">0.00 Ha</h3>
+              <span class="kpi-subtext" id="dashAvgArea">Avg: 0.00 Ha / Farmer</span>
+            </div>
           </div>
         </div>
 
-        <div class="form-bottom-actions">
-          <button type="button" class="btn btn-save" id="saveBtn" onclick="saveFarmer()">💾 Save Farmer</button>
-          <button type="button" class="btn btn-clear" onclick="clearForm()">🔄 Clear Form</button>
-        </div>
-      </section>
-
-      <!-- Right Column: Card Preview & Print Exports -->
-      <section class="preview-section">
-        <div class="section-header">
-          <h3>📇 Live Card Preview</h3>
-          <div class="export-actions">
-            <button class="btn btn-primary" id="downloadCombinedBtn" onclick="handleDownloadCombined()">📥 Dual-Sided PDF</button>
-            <button class="btn btn-outline" id="downloadBtn" onclick="handleDownload()">Front PDF</button>
-            <button class="btn btn-outline" id="downloadBackBtn" onclick="handleDownloadBack()">Back PDF</button>
-            <button class="btn btn-outline" id="printBtn" onclick="handlePrint()">🖨️ Print</button>
-          </div>
-        </div>
-
-        <div class="card-preview-area" id="printContainer">
-          <!-- FRONT CARD -->
-          <div class="card" id="card">
-            <div class="leaf"></div>
-
-            <div class="top">
-              <h2>KISAN CARD</h2>
-              <img class="emblem" src="https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg" alt="Emblem of India" />
+        <!-- Analytics Visual Summaries: Village-wise & Land Distribution -->
+        <div class="analytics-grid">
+          <!-- Village-Wise Breakdown Panel -->
+          <div class="analytics-card">
+            <div class="analytics-card-header">
+              <div class="header-title">
+                <h3>🏘️ Village-wise Farmer Distribution</h3>
+                <p class="card-subtitle">Farmer counts and coverage share by village</p>
+              </div>
+              <span class="badge" id="dashVillageBadge">0 Villages</span>
             </div>
 
-            <div class="details">
-              <p><b>Kisan Name :</b> <span id="name_en">Example Name</span></p>
-              <p><b>Marathi Name :</b> <span id="name_mr">उदा. रमेश पाटील</span></p>
-              <p><b>Father Name :</b> <span id="father_en">Example Name</span></p>
-              <p><b>Father Marathi :</b> <span id="father_mr">उदा. सुरेश पाटील</span></p>
-              <p><b>Address :</b> <span id="address">ABC Street</span></p>
-            </div>
-
-            <p class="aadhaar"><b>Aadhaar No :</b> <span id="aadhaar">XXXX XXXX XXXX</span></p>
-
-            <div class="right-box">
-              <img id="photo" class="photo" src="farmer-placeholder.svg" alt="Farmer photo placeholder" />
-            </div>
-
-            <div class="id" id="fid">KC-1001</div>
-
-            <div class="bottom-strip">
-              <span class="agri-text">AGRI STACK</span>
+            <div class="village-list-wrap" id="villageBreakdownList">
+              <div class="loading-placeholder">Loading village analytics...</div>
             </div>
           </div>
 
-          <!-- BACK CARD -->
-          <div class="card back" id="cardBack">
-            <div class="back-header">
-              <div class="logo">A</div>
+          <!-- Land Area Visual Summary & Classification -->
+          <div class="analytics-card">
+            <div class="analytics-card-header">
+              <div class="header-title">
+                <h3>🚜 Land Area Visual Summary</h3>
+                <p class="card-subtitle">Landholding category classification (Agricultural Census)</p>
+              </div>
+              <span class="badge badge-accent" id="dashAcreageBadge">0.00 Total Ha</span>
+            </div>
 
-              <div>
-                <h3>Agri <span>Card</span></h3>
-                <p>Information Card for Every Farmer</p>
+            <div class="land-summary-content">
+              <!-- Visual Multi-segment Progress Bar -->
+              <div class="segmented-bar" id="landSegmentedBar">
+                <div class="segment seg-marginal" style="width: 25%" title="Marginal (< 1 Ha)"></div>
+                <div class="segment seg-small" style="width: 25%" title="Small (1-2 Ha)"></div>
+                <div class="segment seg-medium" style="width: 25%" title="Semi-Medium (2-4 Ha)"></div>
+                <div class="segment seg-large" style="width: 25%" title="Large (> 4 Ha)"></div>
               </div>
 
-              <div class="farmer-id">
-                <b>FARMER ID</b>
-                <p>Digital Profile</p>
-                <img id="qr" class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=KC-1001" alt="QR Code" />
+              <!-- Land Category Stat Badges -->
+              <div class="land-category-grid">
+                <div class="category-box cat-marginal">
+                  <div class="cat-dot dot-marginal"></div>
+                  <div>
+                    <span class="cat-name">Marginal (&lt; 1 Ha)</span>
+                    <strong id="catMarginalCount">0</strong>
+                  </div>
+                </div>
+
+                <div class="category-box cat-small">
+                  <div class="cat-dot dot-small"></div>
+                  <div>
+                    <span class="cat-name">Small (1 – 2 Ha)</span>
+                    <strong id="catSmallCount">0</strong>
+                  </div>
+                </div>
+
+                <div class="category-box cat-medium">
+                  <div class="cat-dot dot-medium"></div>
+                  <div>
+                    <span class="cat-name">Semi-Medium (2 – 4 Ha)</span>
+                    <strong id="catMediumCount">0</strong>
+                  </div>
+                </div>
+
+                <div class="category-box cat-large">
+                  <div class="cat-dot dot-large"></div>
+                  <div>
+                    <span class="cat-name">Medium / Large (&gt; 4 Ha)</span>
+                    <strong id="catLargeCount">0</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Average summary block -->
+              <div class="land-insight-banner">
+                <div class="insight-item">
+                  <span>Total Documented Land</span>
+                  <strong id="bannerTotalLand">0.00 Hectares</strong>
+                </div>
+                <div class="insight-divider"></div>
+                <div class="insight-item">
+                  <span>Average Land Holding</span>
+                  <strong id="bannerAvgLand">0.00 Ha / Farmer</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Registrations Section -->
+        <div class="recent-registrations-card">
+          <div class="recent-header">
+            <div>
+              <h3>⏱️ Recent Registrations</h3>
+              <p class="card-subtitle">Latest issued farmer identity cards and records</p>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline" onclick="switchView('registry')">
+              View All Registrations →
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="recent-table">
+              <thead>
+                <tr>
+                  <th>Card ID</th>
+                  <th>Farmer Name</th>
+                  <th>Father's Name</th>
+                  <th>Village</th>
+                  <th>Survey No.</th>
+                  <th>Area</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="recentFarmersTableBody">
+                <tr>
+                  <td colspan="8" class="text-center py-4 text-muted">Loading recent registrations...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: CARD STUDIO & GENERATOR -->
+    <section id="viewStudio" class="view-section">
+      <main class="main-layout">
+        <!-- Form Section -->
+        <section class="form-box">
+          <div class="box-title">
+            <h3>🌾 Farmer Details</h3>
+            <span class="badge">Live Sync</span>
+          </div>
+
+          <div class="form-grid">
+            <div class="field-group">
+              <label for="cardInput">Card Number</label>
+              <input id="cardInput" placeholder="Auto-generated (e.g. KC-1001)" oninput="setID(this.value)" />
+            </div>
+
+            <div class="field-group">
+              <label for="nameInput">Farmer Name (English) *</label>
+              <input id="nameInput" placeholder="e.g. Ramesh Patil" data-required="true" oninput="translateName(this.value); clearError(this)" />
+            </div>
+
+            <div class="field-group">
+              <label for="nameMrInput">Farmer Name (Marathi / मराठी)</label>
+              <input id="nameMrInput" placeholder="उदा. रमेश पाटील" oninput="document.getElementById('name_mr').innerText=this.value || 'उदा. रमेश पाटील'" />
+            </div>
+
+            <div class="field-group">
+              <label for="fatherInput">Father's Name (English) *</label>
+              <input id="fatherInput" placeholder="e.g. Suresh Patil" data-required="true" oninput="translateFather(this.value); clearError(this)" />
+            </div>
+
+            <div class="field-group">
+              <label for="fatherMrInput">Father's Name (Marathi / मराठी)</label>
+              <input id="fatherMrInput" placeholder="उदा. सुरेश पाटील" oninput="document.getElementById('father_mr').innerText=this.value || 'उदा. सुरेश पाटील'" />
+            </div>
+
+            <div class="field-group full-width">
+              <label for="addressInput">Address *</label>
+              <input id="addressInput" placeholder="Village / Taluka / District" data-required="true" oninput="document.getElementById('address').innerText=this.value || 'ABC Street'; clearError(this)" />
+            </div>
+
+            <div class="field-group full-width">
+              <label for="aadhaarInput">Aadhaar Number (12 digits)</label>
+              <div class="input-with-action">
+                <input id="aadhaarInput" placeholder="XXXX XXXX XXXX" maxlength="14" oninput="handleAadhaarInput(this)" />
+                <label class="checkbox-inline">
+                  <input type="checkbox" id="maskAadhaarCheck" checked onchange="toggleAadhaarMask()" />
+                  <span>Mask</span>
+                </label>
               </div>
             </div>
 
-            <div class="land">
-              <h4>Land Details</h4>
+            <div class="field-group">
+              <label for="villageInput">Village *</label>
+              <input id="villageInput" placeholder="e.g. Takarkheda" data-required="true" oninput="document.getElementById('village').innerText=this.value || 'Takarkheda'; clearError(this)" />
+            </div>
 
-              <table>
-                <thead>
+            <div class="field-group">
+              <label for="surveyInput">Survey No.</label>
+              <input id="surveyInput" placeholder="e.g. 213" oninput="document.getElementById('survey').innerText=this.value || '213'" />
+            </div>
+
+            <div class="field-group">
+              <label for="subSurveyInput">Sub-Survey / Hissa</label>
+              <input id="subSurveyInput" placeholder="e.g. 2" oninput="document.getElementById('sub').innerText=this.value || '2'" />
+            </div>
+
+            <div class="field-group">
+              <label for="areaInput">Land Area (Hectare)</label>
+              <input id="areaInput" type="number" step="0.01" placeholder="e.g. 1.08" oninput="document.getElementById('area').innerText=this.value || '1.08'" />
+            </div>
+          </div>
+
+          <div id="validationErrors" class="validation-errors"></div>
+
+          <!-- Photo Upload & Camera Capture -->
+          <div class="photo-upload-card">
+            <div class="photo-info">
+              <label>Farmer Photo</label>
+              <p id="photoName">Default image selected</p>
+            </div>
+            <div class="photo-actions">
+              <input id="photoInput" type="file" accept="image/*" onchange="loadPhoto(event)" style="display:none" />
+              <button type="button" class="btn-sm" onclick="document.getElementById('photoInput').click()">📁 Upload</button>
+              <button type="button" class="btn-sm" onclick="openCameraModal()">📷 Camera</button>
+              <button type="button" class="btn-sm btn-danger-soft" onclick="resetPhoto()">✕ Reset</button>
+            </div>
+          </div>
+
+          <div class="form-bottom-actions">
+            <button type="button" class="btn btn-save" id="saveBtn" onclick="saveFarmer()">💾 Save Farmer</button>
+            <button type="button" class="btn btn-clear" onclick="clearForm()">🔄 Clear Form</button>
+          </div>
+        </section>
+
+        <!-- Preview Section -->
+        <section class="preview-section">
+          <div class="section-header">
+            <h3>📇 Live Card Preview</h3>
+            <div class="export-actions">
+              <button class="btn btn-primary" id="downloadCombinedBtn" onclick="handleDownloadCombined()">📥 Dual-Sided PDF</button>
+              <button class="btn btn-outline" id="downloadBtn" onclick="handleDownload()">Front PDF</button>
+              <button class="btn btn-outline" id="downloadBackBtn" onclick="handleDownloadBack()">Back PDF</button>
+              <button class="btn btn-outline" id="printBtn" onclick="handlePrint()">🖨️ Print</button>
+            </div>
+          </div>
+
+          <div class="card-preview-area" id="printContainer">
+            <!-- FRONT CARD -->
+            <div class="card" id="card">
+              <div class="leaf"></div>
+
+              <div class="top">
+                <h2>KISAN CARD</h2>
+                <img class="emblem" src="https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg" alt="Emblem of India" />
+              </div>
+
+              <div class="details">
+                <p><b>Kisan Name :</b> <span id="name_en">Example Name</span></p>
+                <p><b>Marathi Name :</b> <span id="name_mr">उदा. रमेश पाटील</span></p>
+                <p><b>Father Name :</b> <span id="father_en">Example Name</span></p>
+                <p><b>Father Marathi :</b> <span id="father_mr">उदा. सुरेश पाटील</span></p>
+                <p><b>Address :</b> <span id="address">ABC Street</span></p>
+              </div>
+
+              <p class="aadhaar"><b>Aadhaar No :</b> <span id="aadhaar">XXXX XXXX XXXX</span></p>
+
+              <div class="right-box">
+                <img id="photo" class="photo" src="farmer-placeholder.svg" alt="Farmer photo placeholder" />
+              </div>
+
+              <div class="id" id="fid">KC-1001</div>
+
+              <div class="bottom-strip">
+                <span class="agri-text">AGRI STACK</span>
+              </div>
+            </div>
+
+            <!-- BACK CARD -->
+            <div class="card back" id="cardBack">
+              <div class="back-header">
+                <div class="logo">A</div>
+
+                <div>
+                  <h3>Agri <span>Card</span></h3>
+                  <p>Information Card for Every Farmer</p>
+                </div>
+
+                <div class="farmer-id">
+                  <b>FARMER ID</b>
+                  <p>Digital Profile</p>
+                  <img id="qr" class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=KC-1001" alt="QR Code" />
+                </div>
+              </div>
+
+              <div class="land">
+                <h4>Land Details</h4>
+
+                <table>
                   <tr>
                     <th>Village</th>
                     <th>Survey</th>
                     <th>Sub Survey</th>
                     <th>Total Area In Hectare</th>
                   </tr>
-                </thead>
-                <tbody>
+
                   <tr>
                     <td id="village">Takarkheda</td>
                     <td id="survey">213</td>
                     <td id="sub">2</td>
                     <td id="area">1.08</td>
                   </tr>
-                </tbody>
-              </table>
+                </table>
+              </div>
+
+              <div class="bottom">AGRI STACK – DEPARTMENT OF AGRICULTURE</div>
             </div>
-
-            <div class="bottom">AGRI STACK – DEPARTMENT OF AGRICULTURE</div>
           </div>
-        </div>
+        </section>
+      </main>
+    </section>
 
-        <!-- Saved Farmers Directory Panel -->
+    <!-- VIEW 3: FARMERS DIRECTORY REGISTRY -->
+    <section id="viewRegistry" class="view-section">
+      <div class="registry-container">
         <div class="saved-panel" id="savedPanel">
           <div class="saved-header">
             <div>
               <h3>📋 Registered Farmers Directory</h3>
               <p id="farmerCount" class="farmer-count">0 farmers registered</p>
             </div>
-            <button class="btn btn-sm btn-outline" onclick="exportCSV()">📊 Export to CSV</button>
+            <div class="registry-top-actions">
+              <button class="btn btn-sm btn-primary" onclick="switchView('studio'); clearForm();">➕ Register Farmer</button>
+              <button class="btn btn-sm btn-outline" onclick="exportCSV()">📊 Export CSV</button>
+            </div>
           </div>
 
           <div class="search-box">
@@ -238,11 +431,11 @@
           </div>
 
           <div id="farmerList" class="farmer-list">
-            <p class="empty-msg">No saved farmers yet. Fill the form and click Save Farmer.</p>
+            <p class="empty-msg">No saved farmers yet. Fill the form and click "Save Farmer".</p>
           </div>
         </div>
-      </section>
-    </main>
+      </div>
+    </section>
 
     <!-- Camera Modal -->
     <div id="cameraModal" class="modal">
