@@ -3,227 +3,248 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Kisan Card Studio & Executive Dashboard – Comprehensive agricultural identity management, live statistics, land analytics, and PVC card issuance." />
-    <meta name="keywords" content="Kisan Card, Farmer ID, Agri Stack, Dashboard, Land Records, Agriculture" />
-    <title>Kisan Card Studio & Executive Dashboard</title>
+    <title>Kisan Card Pro - Executive Dashboard, Generator & Registry</title>
+
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet" />
+
+    <!-- External Libraries for PDF & Printing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <link rel="stylesheet" href="style.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   </head>
+
   <body>
-    <!-- Top Brand Header & Navigation Tabs -->
+    <!-- Top Modern Navigation -->
     <header class="app-header">
-      <div class="header-container">
-        <div class="brand">
-          <div class="brand-icon">🌱</div>
-          <div>
-            <h1>Kisan Card Studio</h1>
-            <p class="subtitle">AgriStack – Farmer Digital Identity & Analytics</p>
+      <div class="header-inner">
+        <div class="brand-area">
+          <div class="brand-logo">🌾</div>
+          <div class="brand-text">
+            <h1>KISAN CARD <span>PRO</span></h1>
+            <p>Department of Agriculture • Digital Identity Suite</p>
           </div>
         </div>
 
-        <!-- Navigation Tabs -->
-        <nav class="nav-tabs" role="tablist">
-          <button type="button" class="nav-tab active" id="tabDashboard" onclick="switchView('dashboard')">
+        <nav class="nav-tabs">
+          <button class="nav-tab active" id="tabDashboard" onclick="switchView('dashboard')">
             <span class="tab-icon">📊</span> Executive Dashboard
           </button>
-          <button type="button" class="nav-tab" id="tabStudio" onclick="switchView('studio')">
-            <span class="tab-icon">📇</span> Card Generator
+          <button class="nav-tab" id="tabStudio" onclick="switchView('studio')">
+            <span class="tab-icon">🪪</span> Card Generator
           </button>
-          <button type="button" class="nav-tab" id="tabRegistry" onclick="switchView('registry')">
-            <span class="tab-icon">📋</span> Farmers Registry
+          <button class="nav-tab" id="tabRegistry" onclick="switchView('registry')">
+            <span class="tab-icon">📁</span> Farmers Registry
+            <span class="nav-badge" id="navFarmerCount">0</span>
           </button>
         </nav>
 
-        <!-- Quick Header Actions -->
         <div class="header-actions">
-          <button type="button" class="btn btn-sm btn-primary" onclick="switchView('studio'); clearForm();">
-            ➕ New Farmer
+          <button class="btn btn-sm btn-outline" onclick="exportCSV()">
+            <span>📥</span> Export CSV
           </button>
-          <button type="button" class="btn btn-sm btn-outline" onclick="exportCSV()">
-            📥 Export CSV
+          <button class="btn btn-sm btn-primary" onclick="switchView('studio'); clearForm();">
+            <span>➕</span> New Registration
           </button>
         </div>
       </div>
     </header>
 
-    <!-- VIEW 1: EXECUTIVE PROFESSIONAL DASHBOARD -->
+    <!-- VIEW 1: EXECUTIVE DASHBOARD -->
     <section id="viewDashboard" class="view-section active">
-      <div class="dashboard-container">
-        <!-- Dashboard Welcome Bar -->
-        <div class="dash-welcome-bar">
-          <div>
-            <h2>Agricultural Identity & Land Registry Dashboard</h2>
-            <p class="text-muted">Real-time statistics, village-wise coverage, landholding analytics, and recent registrations.</p>
+      <div class="dashboard-hero">
+        <div class="hero-text">
+          <h2>Agricultural Identity & Analytics Intelligence</h2>
+          <p>Real-time analytics for registered farmers, village demographic distribution, and land parcels.</p>
+        </div>
+        <div class="hero-actions">
+          <button class="btn btn-primary" onclick="switchView('studio')">
+            <span>✨</span> Generate Kisan Card
+          </button>
+          <button class="btn btn-secondary" onclick="loadDashboardStats()">
+            <span>🔄</span> Refresh Analytics
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Metrics Row -->
+      <div class="metrics-grid">
+        <div class="metric-card card-glow-green">
+          <div class="metric-icon-wrap bg-green-light">
+            <span class="metric-icon">👥</span>
           </div>
-          <div class="dash-refresh-action">
-            <button type="button" class="btn btn-sm btn-outline" onclick="loadDashboardData(true)">
-              🔄 Refresh Analytics
-            </button>
+          <div class="metric-body">
+            <span class="metric-label">Total Farmers Registered</span>
+            <div class="metric-val-row">
+              <h3 id="statTotalFarmers" class="metric-value">0</h3>
+              <span class="metric-badge badge-green">Live Count</span>
+            </div>
+            <p class="metric-subtext">
+              <span id="statActiveFarmers">0</span> active / <span id="statInactiveFarmers">0</span> pending
+            </p>
           </div>
         </div>
 
-        <!-- KPI Metric Cards Grid -->
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-icon-wrap kpi-green">👥</div>
-            <div class="kpi-content">
-              <span class="kpi-label">Total Registered Farmers</span>
-              <h3 id="dashTotalFarmers" class="kpi-value">0</h3>
-              <span class="kpi-subtext">AgriStack Identity Profiles</span>
-            </div>
+        <div class="metric-card card-glow-blue">
+          <div class="metric-icon-wrap bg-blue-light">
+            <span class="metric-icon">🏡</span>
           </div>
-
-          <div class="kpi-card">
-            <div class="kpi-icon-wrap kpi-blue">✅</div>
-            <div class="kpi-content">
-              <span class="kpi-label">Active Verified Farmers</span>
-              <h3 id="dashActiveFarmers" class="kpi-value">0</h3>
-              <span class="kpi-subtext" id="dashActivePercent">100% Active Status</span>
+          <div class="metric-body">
+            <span class="metric-label">Villages Covered</span>
+            <div class="metric-val-row">
+              <h3 id="statTotalVillages" class="metric-value">0</h3>
+              <span class="metric-badge badge-blue">Jurisdiction</span>
             </div>
-          </div>
-
-          <div class="kpi-card">
-            <div class="kpi-icon-wrap kpi-amber">🏡</div>
-            <div class="kpi-content">
-              <span class="kpi-label">Villages Covered</span>
-              <h3 id="dashVillages" class="kpi-value">0</h3>
-              <span class="kpi-subtext">District Geographic Reach</span>
-            </div>
-          </div>
-
-          <div class="kpi-card">
-            <div class="kpi-icon-wrap kpi-purple">🌾</div>
-            <div class="kpi-content">
-              <span class="kpi-label">Total Land Area</span>
-              <h3 id="dashTotalArea" class="kpi-value">0.00 Ha</h3>
-              <span class="kpi-subtext" id="dashAvgArea">Avg: 0.00 Ha / Farmer</span>
-            </div>
+            <p class="metric-subtext">Active agricultural clusters</p>
           </div>
         </div>
 
-        <!-- Analytics Visual Summaries: Village-wise & Land Distribution -->
-        <div class="analytics-grid">
-          <!-- Village-Wise Breakdown Panel -->
-          <div class="analytics-card">
-            <div class="analytics-card-header">
-              <div class="header-title">
-                <h3>🏘️ Village-wise Farmer Distribution</h3>
-                <p class="card-subtitle">Farmer counts and coverage share by village</p>
-              </div>
-              <span class="badge" id="dashVillageBadge">0 Villages</span>
-            </div>
-
-            <div class="village-list-wrap" id="villageBreakdownList">
-              <div class="loading-placeholder">Loading village analytics...</div>
-            </div>
+        <div class="metric-card card-glow-amber">
+          <div class="metric-icon-wrap bg-amber-light">
+            <span class="metric-icon">🗺️</span>
           </div>
-
-          <!-- Land Area Visual Summary & Classification -->
-          <div class="analytics-card">
-            <div class="analytics-card-header">
-              <div class="header-title">
-                <h3>🚜 Land Area Visual Summary</h3>
-                <p class="card-subtitle">Landholding category classification (Agricultural Census)</p>
-              </div>
-              <span class="badge badge-accent" id="dashAcreageBadge">0.00 Total Ha</span>
+          <div class="metric-body">
+            <span class="metric-label">Total Land Area</span>
+            <div class="metric-val-row">
+              <h3 id="statTotalArea" class="metric-value">0.00</h3>
+              <span class="metric-unit">Hectares</span>
             </div>
-
-            <div class="land-summary-content">
-              <!-- Visual Multi-segment Progress Bar -->
-              <div class="segmented-bar" id="landSegmentedBar">
-                <div class="segment seg-marginal" style="width: 25%" title="Marginal (< 1 Ha)"></div>
-                <div class="segment seg-small" style="width: 25%" title="Small (1-2 Ha)"></div>
-                <div class="segment seg-medium" style="width: 25%" title="Semi-Medium (2-4 Ha)"></div>
-                <div class="segment seg-large" style="width: 25%" title="Large (> 4 Ha)"></div>
-              </div>
-
-              <!-- Land Category Stat Badges -->
-              <div class="land-category-grid">
-                <div class="category-box cat-marginal">
-                  <div class="cat-dot dot-marginal"></div>
-                  <div>
-                    <span class="cat-name">Marginal (&lt; 1 Ha)</span>
-                    <strong id="catMarginalCount">0</strong>
-                  </div>
-                </div>
-
-                <div class="category-box cat-small">
-                  <div class="cat-dot dot-small"></div>
-                  <div>
-                    <span class="cat-name">Small (1 – 2 Ha)</span>
-                    <strong id="catSmallCount">0</strong>
-                  </div>
-                </div>
-
-                <div class="category-box cat-medium">
-                  <div class="cat-dot dot-medium"></div>
-                  <div>
-                    <span class="cat-name">Semi-Medium (2 – 4 Ha)</span>
-                    <strong id="catMediumCount">0</strong>
-                  </div>
-                </div>
-
-                <div class="category-box cat-large">
-                  <div class="cat-dot dot-large"></div>
-                  <div>
-                    <span class="cat-name">Medium / Large (&gt; 4 Ha)</span>
-                    <strong id="catLargeCount">0</strong>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Average summary block -->
-              <div class="land-insight-banner">
-                <div class="insight-item">
-                  <span>Total Documented Land</span>
-                  <strong id="bannerTotalLand">0.00 Hectares</strong>
-                </div>
-                <div class="insight-divider"></div>
-                <div class="insight-item">
-                  <span>Average Land Holding</span>
-                  <strong id="bannerAvgLand">0.00 Ha / Farmer</strong>
-                </div>
-              </div>
-            </div>
+            <p class="metric-subtext">
+              Avg: <span id="statAvgArea">0.00</span> Ha per farmer
+            </p>
           </div>
         </div>
 
-        <!-- Recent Registrations Section -->
-        <div class="recent-registrations-card">
-          <div class="recent-header">
+        <div class="metric-card card-glow-purple">
+          <div class="metric-icon-wrap bg-purple-light">
+            <span class="metric-icon">🛡️</span>
+          </div>
+          <div class="metric-body">
+            <span class="metric-label">Identity Verification</span>
+            <div class="metric-val-row">
+              <h3 id="statVerificationRate" class="metric-value">100%</h3>
+              <span class="metric-badge badge-purple">Secured</span>
+            </div>
+            <p class="metric-subtext">Aadhaar & Survey cross-checked</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashboard Visual Analytics Section -->
+      <div class="dashboard-analytics-grid">
+        <!-- Village Wise Farmer Breakdown -->
+        <div class="analytics-card village-breakdown-card">
+          <div class="card-head-flex">
             <div>
-              <h3>⏱️ Recent Registrations</h3>
-              <p class="card-subtitle">Latest issued farmer identity cards and records</p>
+              <h3>🏘️ Village-Wise Farmer Count</h3>
+              <p class="card-subtitle">Distribution of registered farmers by village cluster</p>
             </div>
-            <button type="button" class="btn btn-sm btn-outline" onclick="switchView('registry')">
-              View All Registrations →
-            </button>
+            <span class="badge-pill" id="villageBreakdownTotal">0 Villages</span>
           </div>
 
-          <div class="table-responsive">
-            <table class="recent-table">
-              <thead>
-                <tr>
-                  <th>Card ID</th>
-                  <th>Farmer Name</th>
-                  <th>Father's Name</th>
-                  <th>Village</th>
-                  <th>Survey No.</th>
-                  <th>Area</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="recentFarmersTableBody">
-                <tr>
-                  <td colspan="8" class="text-center py-4 text-muted">Loading recent registrations...</td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="village-bars-container" id="villageStatsList">
+            <div class="empty-state-sm">No village records available.</div>
           </div>
+        </div>
+
+        <!-- Land Area Summary & Agricultural Classification -->
+        <div class="analytics-card land-summary-card">
+          <div class="card-head-flex">
+            <div>
+              <h3>🌾 Land Area Visual Summary</h3>
+              <p class="card-subtitle">Agricultural census holding distribution</p>
+            </div>
+          </div>
+
+          <div class="land-distribution-bars">
+            <div class="distribution-segment-bar">
+              <div id="barMarginal" class="bar-seg seg-marginal" style="width: 25%" title="Marginal (<1 Ha)"></div>
+              <div id="barSmall" class="bar-seg seg-small" style="width: 25%" title="Small (1-2 Ha)"></div>
+              <div id="barSemiMedium" class="bar-seg seg-semi" style="width: 25%" title="Semi-Medium (2-4 Ha)"></div>
+              <div id="barLarge" class="bar-seg seg-large" style="width: 25%" title="Large (>4 Ha)"></div>
+            </div>
+
+            <div class="land-legend-grid">
+              <div class="legend-item">
+                <span class="legend-dot dot-marginal"></span>
+                <div class="legend-info">
+                  <strong>Marginal (&lt; 1 Ha)</strong>
+                  <span id="countMarginal">0 farmers</span>
+                </div>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot dot-small"></span>
+                <div class="legend-info">
+                  <strong>Small (1 - 2 Ha)</strong>
+                  <span id="countSmall">0 farmers</span>
+                </div>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot dot-semi"></span>
+                <div class="legend-info">
+                  <strong>Semi-Medium (2 - 4 Ha)</strong>
+                  <span id="countSemiMedium">0 farmers</span>
+                </div>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot dot-large"></span>
+                <div class="legend-info">
+                  <strong>Large (&gt; 4 Ha)</strong>
+                  <span id="countLarge">0 farmers</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="land-summary-banner">
+              <div class="insight-item">
+                <span>Total Documented Land</span>
+                <strong id="bannerTotalLand">0.00 Hectares</strong>
+              </div>
+              <div class="insight-divider"></div>
+              <div class="insight-item">
+                <span>Average Land Holding</span>
+                <strong id="bannerAvgLand">0.00 Ha / Farmer</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Registrations Section -->
+      <div class="recent-registrations-card">
+        <div class="recent-header">
+          <div>
+            <h3>⏱️ Recent Registrations</h3>
+            <p class="card-subtitle">Latest issued farmer identity cards and records</p>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline" onclick="switchView('registry')">
+            View All in Registry ➔
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="recent-table">
+            <thead>
+              <tr>
+                <th>Card ID</th>
+                <th>Farmer Name</th>
+                <th>Father's Name</th>
+                <th>Village</th>
+                <th>Survey No.</th>
+                <th>Area</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="recentFarmersTableBody">
+              <tr>
+                <td colspan="8" class="text-center py-4 text-muted">Loading recent registrations...</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -234,7 +255,7 @@
         <!-- Form Section -->
         <section class="form-box">
           <div class="box-title">
-            <h3>🌾 Farmer Details</h3>
+            <h3>📝 Farmer Details</h3>
             <span class="badge">Live Sync</span>
           </div>
 
@@ -251,7 +272,7 @@
 
             <div class="field-group">
               <label for="nameMrInput">Farmer Name (Marathi / मराठी)</label>
-              <input id="nameMrInput" placeholder="उदा. रमेश पाटील" oninput="document.getElementById('name_mr').innerText=this.value || 'उदा. रमेश पाटील'" />
+              <input id="nameMrInput" placeholder="उदा. रमेश पाटील" oninput="document.getElementById('name_mr').innerText=this.value || 'रमेश पाटील'" />
             </div>
 
             <div class="field-group">
@@ -261,7 +282,7 @@
 
             <div class="field-group">
               <label for="fatherMrInput">Father's Name (Marathi / मराठी)</label>
-              <input id="fatherMrInput" placeholder="उदा. सुरेश पाटील" oninput="document.getElementById('father_mr').innerText=this.value || 'उदा. सुरेश पाटील'" />
+              <input id="fatherMrInput" placeholder="उदा. सुरेश पाटील" oninput="document.getElementById('father_mr').innerText=this.value || 'सुरेश पाटील'" />
             </div>
 
             <div class="field-group full-width">
@@ -313,22 +334,22 @@
               <input id="photoInput" type="file" accept="image/*" onchange="loadPhoto(event)" style="display:none" />
               <button type="button" class="btn-sm" onclick="document.getElementById('photoInput').click()">📁 Upload</button>
               <button type="button" class="btn-sm" onclick="openCameraModal()">📷 Camera</button>
-              <button type="button" class="btn-sm btn-danger-soft" onclick="resetPhoto()">✕ Reset</button>
+              <button type="button" class="btn-sm btn-danger-soft" onclick="resetPhoto()">↺ Reset</button>
             </div>
           </div>
 
           <div class="form-bottom-actions">
             <button type="button" class="btn btn-save" id="saveBtn" onclick="saveFarmer()">💾 Save Farmer</button>
-            <button type="button" class="btn btn-clear" onclick="clearForm()">🔄 Clear Form</button>
+            <button type="button" class="btn btn-clear" onclick="clearForm()">🧹 Clear Form</button>
           </div>
         </section>
 
         <!-- Preview Section -->
         <section class="preview-section">
           <div class="section-header">
-            <h3>📇 Live Card Preview</h3>
+            <h3>🪪 Live Card Preview</h3>
             <div class="export-actions">
-              <button class="btn btn-primary" id="downloadCombinedBtn" onclick="handleDownloadCombined()">📥 Dual-Sided PDF</button>
+              <button class="btn btn-primary" id="downloadCombinedBtn" onclick="handleDownloadCombined()">📑 Dual-Sided PDF</button>
               <button class="btn btn-outline" id="downloadBtn" onclick="handleDownload()">Front PDF</button>
               <button class="btn btn-outline" id="downloadBackBtn" onclick="handleDownloadBack()">Back PDF</button>
               <button class="btn btn-outline" id="printBtn" onclick="handlePrint()">🖨️ Print</button>
@@ -346,11 +367,11 @@
               </div>
 
               <div class="details">
-                <p><b>Kisan Name :</b> <span id="name_en">Example Name</span></p>
-                <p><b>Marathi Name :</b> <span id="name_mr">उदा. रमेश पाटील</span></p>
-                <p><b>Father Name :</b> <span id="father_en">Example Name</span></p>
-                <p><b>Father Marathi :</b> <span id="father_mr">उदा. सुरेश पाटील</span></p>
-                <p><b>Address :</b> <span id="address">ABC Street</span></p>
+                <p><b>Kisan Name :</b> <span id="name_en">Ramesh Patil</span></p>
+                <p><b>Marathi Name :</b> <span id="name_mr">रमेश पाटील</span></p>
+                <p><b>Father Name :</b> <span id="father_en">Suresh Patil</span></p>
+                <p><b>Father Marathi :</b> <span id="father_mr">सुरेश पाटील</span></p>
+                <p><b>Address :</b> <span id="address">Main Road</span></p>
               </div>
 
               <p class="aadhaar"><b>Aadhaar No :</b> <span id="aadhaar">XXXX XXXX XXXX</span></p>
@@ -403,35 +424,146 @@
                 </table>
               </div>
 
-              <div class="bottom">AGRI STACK – DEPARTMENT OF AGRICULTURE</div>
+              <div class="bottom">AGRI STACK — DEPARTMENT OF AGRICULTURE</div>
             </div>
           </div>
         </section>
       </main>
     </section>
 
-    <!-- VIEW 3: FARMERS DIRECTORY REGISTRY -->
+    <!-- VIEW 3: FARMERS DIRECTORY REGISTRY WITH ADVANCED SEARCH & FILTERS -->
     <section id="viewRegistry" class="view-section">
       <div class="registry-container">
         <div class="saved-panel" id="savedPanel">
+          <!-- Registry Top Bar -->
           <div class="saved-header">
             <div>
-              <h3>📋 Registered Farmers Directory</h3>
-              <p id="farmerCount" class="farmer-count">0 farmers registered</p>
+              <h3>📁 Registered Farmers Directory</h3>
+              <p id="farmerCount" class="farmer-count">Loading registered farmers...</p>
             </div>
             <div class="registry-top-actions">
-              <button class="btn btn-sm btn-primary" onclick="switchView('studio'); clearForm();">➕ Register Farmer</button>
-              <button class="btn btn-sm btn-outline" onclick="exportCSV()">📊 Export CSV</button>
+              <div class="view-toggle-btns">
+                <button type="button" class="btn-icon-toggle active" id="viewModeGridBtn" onclick="setRegistryViewMode('grid')" title="Grid Card View">
+                  ▦ Grid
+                </button>
+                <button type="button" class="btn-icon-toggle" id="viewModeTableBtn" onclick="setRegistryViewMode('table')" title="Detailed Table View">
+                  ☰ Table
+                </button>
+              </div>
+              <button class="btn btn-sm btn-outline" onclick="exportCSV()">📥 Export CSV</button>
+              <button class="btn btn-sm btn-primary" onclick="switchView('studio'); clearForm();">➕ Add Farmer</button>
             </div>
           </div>
 
-          <div class="search-box">
-            <span class="search-icon">🔍</span>
-            <input id="farmerSearch" class="search-input" placeholder="Search by name, village, survey, or card number..." oninput="filterFarmers(this.value)" />
+          <!-- Advanced Search & Filter Controls Card -->
+          <div class="advanced-filter-card">
+            <div class="filter-controls-grid">
+              <!-- Search Bar -->
+              <div class="search-input-group">
+                <label for="farmerSearch" class="filter-label">Search Farmers</label>
+                <div class="search-input-wrapper">
+                  <span class="search-prefix-icon">🔍</span>
+                  <input
+                    id="farmerSearch"
+                    class="search-input-field"
+                    placeholder="Search by farmer name, village, survey, or card number..."
+                    oninput="handleSearchInput(this.value)"
+                  />
+                  <button type="button" class="search-clear-btn" id="searchClearBtn" onclick="clearSearchInput()" title="Clear Search">✕</button>
+                </div>
+              </div>
+
+              <!-- Village Filter -->
+              <div class="filter-field-group">
+                <label for="filterVillage" class="filter-label">Filter by Village</label>
+                <select id="filterVillage" class="filter-select" onchange="handleVillageFilter(this.value)">
+                  <option value="all">🏘️ All Villages</option>
+                </select>
+              </div>
+
+              <!-- Status Filter -->
+              <div class="filter-field-group">
+                <label for="filterStatus" class="filter-label">Registration Status</label>
+                <select id="filterStatus" class="filter-select" onchange="handleStatusFilter(this.value)">
+                  <option value="all">⚡ All Status</option>
+                  <option value="active">✅ Active & Verified</option>
+                  <option value="inactive">⏳ Pending / Inactive</option>
+                </select>
+              </div>
+
+              <!-- Sort By Dropdown -->
+              <div class="filter-field-group">
+                <label for="sortSelector" class="filter-label">Sort Records</label>
+                <select id="sortSelector" class="filter-select" onchange="handleSortChange(this.value)">
+                  <option value="createdAt_desc">⏱️ Newest First</option>
+                  <option value="createdAt_asc">⏱️ Oldest First</option>
+                  <option value="farmerName_asc">🔤 Farmer Name (A → Z)</option>
+                  <option value="farmerName_desc">🔤 Farmer Name (Z → A)</option>
+                  <option value="area_desc">🌾 Land Area (High → Low)</option>
+                  <option value="area_asc">🌾 Land Area (Low → High)</option>
+                  <option value="village_asc">🏡 Village (A → Z)</option>
+                  <option value="cardNumber_asc">🪪 Card Number (Low → High)</option>
+                </select>
+              </div>
+
+              <!-- Page Size -->
+              <div class="filter-field-group filter-sm">
+                <label for="pageSizeSelector" class="filter-label">Per Page</label>
+                <select id="pageSizeSelector" class="filter-select" onchange="handlePageSizeChange(this.value)">
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Active Filter Badges Bar -->
+            <div class="active-filter-chips" id="activeFilterChips">
+              <!-- Dynamically populated chips -->
+            </div>
           </div>
 
-          <div id="farmerList" class="farmer-list">
-            <p class="empty-msg">No saved farmers yet. Fill the form and click "Save Farmer".</p>
+          <!-- Registry Content Views (Grid & Table) -->
+          <div id="registryResultsContainer">
+            <!-- Grid View -->
+            <div id="farmerList" class="farmer-list">
+              <p class="empty-msg">Loading records...</p>
+            </div>
+
+            <!-- Table View -->
+            <div id="farmerTableWrapper" class="farmer-table-wrapper" style="display: none;">
+              <div class="table-responsive">
+                <table class="registry-data-table">
+                  <thead>
+                    <tr>
+                      <th onclick="toggleTableSort('cardNumber')">Card ID ↕</th>
+                      <th onclick="toggleTableSort('farmerName')">Farmer Name ↕</th>
+                      <th>Father Name</th>
+                      <th onclick="toggleTableSort('village')">Village ↕</th>
+                      <th>Survey No.</th>
+                      <th onclick="toggleTableSort('area')">Area (Ha) ↕</th>
+                      <th>Aadhaar</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="farmerTableBody">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pagination Bar -->
+          <div class="pagination-bar" id="paginationBar">
+            <div class="pagination-info" id="paginationInfo">
+              Showing 0 to 0 of 0 entries
+            </div>
+            <div class="pagination-controls" id="paginationControls">
+              <!-- Dynamically populated buttons -->
+            </div>
           </div>
         </div>
       </div>

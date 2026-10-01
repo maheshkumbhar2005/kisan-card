@@ -106,6 +106,121 @@ function validateFarmerData(input = {}) {
   return { ok: errors.length === 0, errors, data };
 }
 
+function queryFarmers(allFarmers, query = {}) {
+  let result = [...allFarmers];
+
+  // 1. Search Query (Name in EN/MR, Father in EN/MR, Village, Card Number, Survey, Aadhaar)
+  const searchTerm = String(query.search || query.q || '').trim().toLowerCase();
+  if (searchTerm) {
+    result = result.filter((f) => {
+      const nameEn = String(f.farmerName || '').toLowerCase();
+      const nameMr = String(f.farmerNameMr || '').toLowerCase();
+      const fatherEn = String(f.fatherName || '').toLowerCase();
+      const fatherMr = String(f.fatherNameMr || '').toLowerCase();
+      const village = String(f.village || '').toLowerCase();
+      const card = String(f.cardNumber || '').toLowerCase();
+      const survey = String(f.survey || '').toLowerCase();
+      const aadhaar = String(f.aadhaar || '').replace(/\s/g, '');
+      const rawSearch = searchTerm.replace(/\s/g, '');
+
+      return (
+        nameEn.includes(searchTerm) ||
+        nameMr.includes(searchTerm) ||
+        fatherEn.includes(searchTerm) ||
+        fatherMr.includes(searchTerm) ||
+        village.includes(searchTerm) ||
+        card.includes(searchTerm) ||
+        survey.includes(searchTerm) ||
+        aadhaar.includes(rawSearch)
+      );
+    });
+  }
+
+  // 2. Village Filter
+  const villageFilter = String(query.village || '').trim().toLowerCase();
+  if (villageFilter && villageFilter !== 'all') {
+    result = result.filter((f) => String(f.village || '').trim().toLowerCase() === villageFilter);
+  }
+
+  // 3. Status Filter (active / inactive / all)
+  const statusFilter = String(query.status || '').trim().toLowerCase();
+  if (statusFilter && statusFilter !== 'all') {
+    result = result.filter((f) => String(f.status || 'active').trim().toLowerCase() === statusFilter);
+  }
+
+  // Extract unique villages from allFarmers
+  const uniqueVillages = Array.from(
+    new Set(allFarmers.map((f) => String(f.village || '').trim()).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b));
+
+  // 4. Sorting
+  const sortBy = String(query.sortBy || 'createdAt');
+  const sortOrder = String(query.sortOrder || 'desc').toLowerCase() === 'asc' ? 1 : -1;
+
+  result.sort((a, b) => {
+    let valA;
+    let valB;
+
+    switch (sortBy) {
+      case 'farmerName':
+      case 'name':
+        valA = String(a.farmerName || '').toLowerCase();
+        valB = String(b.farmerName || '').toLowerCase();
+        return valA.localeCompare(valB) * sortOrder;
+      case 'village':
+        valA = String(a.village || '').toLowerCase();
+        valB = String(b.village || '').toLowerCase();
+        return valA.localeCompare(valB) * sortOrder;
+      case 'cardNumber':
+      case 'card': {
+        const numA = Number(String(a.cardNumber || '').replace(/\D/g, '')) || 0;
+        const numB = Number(String(b.cardNumber || '').replace(/\D/g, '')) || 0;
+        return (numA - numB) * sortOrder;
+      }
+      case 'area': {
+        const areaA = parseFloat(a.area) || 0;
+        const areaB = parseFloat(b.area) || 0;
+        return (areaA - areaB) * sortOrder;
+      }
+      case 'createdAt':
+      default: {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return (dateA - dateB) * sortOrder;
+      }
+    }
+  });
+
+  const total = result.length;
+  let page = parseInt(query.page, 10);
+  let limit = parseInt(query.limit, 10);
+
+  if (isNaN(page) || page < 1) page = 1;
+
+  if (!isNaN(limit) && limit > 0) {
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const offset = (page - 1) * limit;
+    const paginatedFarmers = result.slice(offset, offset + limit);
+    return {
+      farmers: paginatedFarmers,
+      total,
+      page,
+      limit,
+      totalPages,
+      villages: uniqueVillages
+    };
+  }
+
+  return {
+    farmers: result,
+    total,
+    page: 1,
+    limit: total,
+    totalPages: 1,
+    villages: uniqueVillages
+  };
+}
+
 function getStats() {
   const farmers = readFarmers();
   const totalFarmers = farmers.length;
@@ -116,10 +231,10 @@ function getStats() {
   let totalArea = 0;
 
   const landDistribution = {
-    marginal: 0, // < 1.0 Ha
-    small: 0,    // 1.0 - 2.0 Ha
-    semiMedium: 0, // 2.0 - 4.0 Ha
-    large: 0     // > 4.0 Ha
+    marginal: 0,
+    small: 0,
+    semiMedium: 0,
+    large: 0
   };
 
   farmers.forEach((f) => {
@@ -210,17 +325,19 @@ function createApp(options = {}) {
     res.json({ stats: getStats() });
   });
 
-  app.get('/api/farmers/export/csv', (_req, res) => {
-    const farmers = readFarmers();
-    const csv = exportToCSV(farmers);
+  app.get('/api/farmers/export/csv', (req, res) => {
+    const allFarmers = readFarmers();
+    const queryResult = queryFarmers(allFarmers, req.query);
+    const csv = exportToCSV(queryResult.farmers);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="kisan_card_farmers.csv"');
     res.send(csv);
   });
 
-  app.get('/api/farmers', (_req, res) => {
-    const farmers = readFarmers();
-    res.json({ farmers });
+  app.get('/api/farmers', (req, res) => {
+    const allFarmers = readFarmers();
+    const result = queryFarmers(allFarmers, req.query);
+    res.json(result);
   });
 
   app.get('/api/farmers/:id', (req, res) => {
@@ -304,16 +421,9 @@ module.exports = {
   formatAadhaar,
   maskAadhaar,
   generateCardNumber,
+  queryFarmers,
   readFarmers,
   writeFarmers,
   getStats,
   exportToCSV
 };
-
-if (require.main === module) {
-  const app = createApp({ serveStatic: true });
-  const port = process.env.PORT || 3000;
-  app.listen(port, () => {
-    console.log('Kisan Card API running on http://localhost:' + port);
-  });
-}
