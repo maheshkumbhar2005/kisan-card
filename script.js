@@ -312,10 +312,10 @@ async function checkAuthStatus() {
     return false;
   }
   try {
-    const res = await fetch(`${AUTH_BASE}/verify`, { credentials: 'include', headers: getAuthHeaders() });
+    const res = await fetch(`${AUTH_BASE}/me`, { headers: getAuthHeaders() });
     const data = await res.json();
     if (data.authenticated) {
-      updateAuthUI(true, data.username || 'Admin');
+      updateAuthUI(true, data.username || data.user?.username || 'Admin');
       return true;
     } else {
       localStorage.removeItem('kisan_admin_token');
@@ -349,7 +349,13 @@ function openLoginModal(onSuccessCallback = null) {
   if (errBox) errBox.innerHTML = '';
   modal.classList.add('active');
   window._authSuccessCallback = onSuccessCallback;
-  setTimeout(() => document.getElementById('adminUsername')?.focus(), 100);
+
+  const userInput = document.getElementById('adminUsername');
+  const passInput = document.getElementById('adminPassword');
+  if (userInput && !userInput.value) userInput.value = 'admin';
+  setTimeout(() => {
+    if (passInput) passInput.focus();
+  }, 100);
 }
 
 function closeLoginModal() {
@@ -361,7 +367,7 @@ function closeLoginModal() {
 async function handleAdminLogin(event) {
   event.preventDefault();
   const u = document.getElementById('adminUsername').value.trim();
-  const p = document.getElementById('adminPassword').value;
+  const p = document.getElementById('adminPassword').value.trim();
   const errBox = document.getElementById('loginErrorMsg');
   const submitBtn = document.getElementById('loginSubmitBtn');
 
@@ -373,18 +379,28 @@ async function handleAdminLogin(event) {
     const res = await fetch(`${AUTH_BASE}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: u, password: p }),
-      credentials: 'include'
+      body: JSON.stringify({ username: u, password: p })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Authentication failed');
 
-    if (data.token) localStorage.setItem('kisan_admin_token', data.token);
-    updateAuthUI(true, data.username || u);
+    if (data.token) {
+      localStorage.setItem('kisan_admin_token', data.token);
+    }
+    const adminName = data.username || data.user?.username || u;
+    updateAuthUI(true, adminName);
     closeLoginModal();
 
+    // Reload active records and statistics
+    loadDashboardStats();
+    if (document.getElementById('viewRegistry').classList.contains('active')) {
+      fetchFilteredFarmers();
+    }
+
     if (typeof window._authSuccessCallback === 'function') {
-      window._authSuccessCallback();
+      const cb = window._authSuccessCallback;
+      window._authSuccessCallback = null;
+      cb();
     }
   } catch (err) {
     errBox.innerHTML = `⚠️ ${err.message}`;
@@ -396,7 +412,7 @@ async function handleAdminLogin(event) {
 
 async function logoutAdmin() {
   try {
-    await fetch(`${AUTH_BASE}/logout`, { method: 'POST', headers: getAuthHeaders(), credentials: 'include' });
+    await fetch(`${AUTH_BASE}/logout`, { method: 'POST', headers: getAuthHeaders() });
   } catch (e) {}
   localStorage.removeItem('kisan_admin_token');
   updateAuthUI(false);
@@ -408,6 +424,11 @@ async function handleProtectedNavigation(targetView) {
   if (authed) {
     switchView(targetView);
   } else {
+    openLoginModal(() => {
+      switchView(targetView);
+    });
+  }
+} else {
     openLoginModal(() => {
       switchView(targetView);
     });
@@ -675,7 +696,26 @@ async function fetchFilteredFarmers() {
   });
 
   try {
-    const res = await fetch(`${API_BASE}?${params.toString()}`);
+    const res = await fetch(`${API_BASE}?${params.toString()}`, {
+      headers: getAuthHeaders()
+    });
+
+    if (res.status === 401) {
+      const tbody = document.getElementById('farmerList');
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 2.5rem;">
+              <div style="font-weight: 700; color: #166534; font-size: 1rem; margin-bottom: 0.5rem;">🔐 Administrator Access Required</div>
+              <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 1rem;">Please log in as an administrator to browse and manage registered farmer records.</p>
+              <button class="btn btn-sm btn-primary" onclick="openLoginModal(() => fetchFilteredFarmers())">Login as Admin</button>
+            </td>
+          </tr>
+        `;
+      }
+      return;
+    }
+
     if (!res.ok) throw new Error('Failed to fetch records');
     const data = await res.json();
 

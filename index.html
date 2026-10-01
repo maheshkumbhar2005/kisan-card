@@ -496,7 +496,7 @@
       </div>
     </section>
 
-    <!-- ADMIN LOGIN MODAL -->
+        <!-- ADMIN LOGIN MODAL -->
     <div id="loginModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
       <div class="modal-content">
         <div class="modal-header">
@@ -505,18 +505,22 @@
         </div>
         <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
           <div class="modal-body">
-            <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 1rem;">
-              Please enter administrator credentials to access card generation, editing, and database features.
-            </p>
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem;">
+              <div style="font-weight: 700; color: #166534; font-size: 0.85rem; margin-bottom: 2px;">Administrator Access</div>
+              <p style="font-size: 0.78rem; color: #14532d; margin: 0;">
+                Default Credentials: <strong>admin</strong> / <strong>admin</strong> (or <strong>admin123</strong>)
+              </p>
+            </div>
+
             <div class="field-group" style="margin-bottom: 1rem;">
               <label for="adminUsername">Username</label>
-              <input id="adminUsername" type="text" placeholder="admin" required autocomplete="username" />
+              <input id="adminUsername" name="username" type="text" value="admin" placeholder="admin" required autocomplete="username" />
             </div>
             <div class="field-group">
               <label for="adminPassword">Password</label>
-              <input id="adminPassword" type="password" placeholder="••••••••" required autocomplete="current-password" />
+              <input id="adminPassword" name="password" type="password" placeholder="admin" required autocomplete="current-password" />
             </div>
-            <div id="loginErrorMsg" class="validation-errors"></div>
+            <div id="loginErrorMsg" class="validation-errors" style="margin-top: 0.75rem;"></div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="closeLoginModal()">Cancel</button>
@@ -543,6 +547,7 @@
         </div>
       </div>
     </div>
+
 
     <script src="script.js"></script>
   </body>
