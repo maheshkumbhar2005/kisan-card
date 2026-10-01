@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Official Kisan Card Verification Portal | AgriStack</title>
 
     <!-- Google Fonts -->
@@ -20,54 +20,57 @@
       .verify-hero {
         background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
         color: #ffffff;
-        padding: 2.5rem 1.5rem;
+        padding: 2rem 1rem;
         text-align: center;
         border-bottom: 4px solid #eab308;
         box-shadow: var(--shadow-md);
       }
       .verify-emblem {
-        height: 52px;
-        margin-bottom: 0.75rem;
+        height: 46px;
+        margin-bottom: 0.5rem;
         filter: brightness(0) invert(1);
       }
       .verify-hero h1 {
-        font-size: 1.85rem;
+        font-size: 1.5rem;
         font-weight: 800;
         letter-spacing: -0.02em;
         margin-bottom: 0.25rem;
       }
       .verify-hero p {
         color: #a7f3d0;
-        font-size: 0.95rem;
-        max-width: 600px;
+        font-size: 0.85rem;
+        max-width: 550px;
         margin: 0 auto;
       }
       .verify-card-container {
-        max-width: 720px;
-        margin: -2rem auto 2rem auto;
+        max-width: 680px;
+        margin: -1.5rem auto 2rem auto;
         padding: 0 1rem;
       }
       .verify-search-box {
         background: #ffffff;
         border-radius: var(--radius-lg);
-        padding: 1.5rem;
+        padding: 1.25rem;
         box-shadow: var(--shadow-lg);
         border: 1px solid var(--border-color);
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.25rem;
       }
       .verify-input-group {
         display: flex;
         gap: 0.5rem;
+        flex-wrap: wrap;
       }
       .verify-input {
         flex: 1;
-        padding: 0.85rem 1.25rem;
+        min-width: 200px;
+        padding: 0.75rem 1rem;
         border: 2px solid var(--border-color);
         border-radius: var(--radius-md);
         font-family: var(--font-main);
-        font-size: 1rem;
+        font-size: 0.95rem;
         font-weight: 600;
         text-transform: uppercase;
+        min-height: 44px;
       }
       .verify-input:focus {
         outline: none;
@@ -87,10 +90,10 @@
         to { opacity: 1; transform: translateY(0); }
       }
       .verify-badge-header {
-        padding: 1.5rem;
+        padding: 1.25rem;
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: 0.85rem;
       }
       .badge-valid {
         background: #ecfdf5;
@@ -101,55 +104,56 @@
         border-bottom: 2px solid #f87171;
       }
       .seal-icon {
-        width: 56px;
-        height: 56px;
+        width: 48px;
+        height: 48px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.8rem;
+        font-size: 1.5rem;
         flex-shrink: 0;
       }
       .seal-valid { background: #d1fae5; color: #059669; }
       .seal-invalid { background: #fee2e2; color: #dc2626; }
       .verify-title h3 {
-        font-size: 1.25rem;
+        font-size: 1.15rem;
         font-weight: 800;
         color: #065f46;
         margin: 0;
       }
       .verify-title p {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         color: var(--text-muted);
         margin: 2px 0 0 0;
       }
       .verify-body-content {
-        padding: 1.75rem;
+        padding: 1.25rem;
       }
       .farmer-profile-summary {
         display: flex;
-        gap: 1.5rem;
+        gap: 1.25rem;
         align-items: center;
-        padding-bottom: 1.5rem;
+        padding-bottom: 1.25rem;
         border-bottom: 1px dashed var(--border-color);
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.25rem;
       }
       .verified-avatar {
-        width: 90px;
-        height: 90px;
+        width: 80px;
+        height: 80px;
         border-radius: var(--radius-md);
         object-fit: cover;
         border: 3px solid #15803d;
         box-shadow: var(--shadow-md);
+        flex-shrink: 0;
       }
       .verified-names h2 {
-        font-size: 1.4rem;
+        font-size: 1.25rem;
         font-weight: 800;
         color: var(--text-primary);
         margin: 0;
       }
       .verified-names .mr-name {
-        font-size: 1.1rem;
+        font-size: 1rem;
         color: var(--primary-dark);
         font-family: var(--font-mr);
         margin: 2px 0 6px 0;
@@ -157,20 +161,21 @@
       .verified-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 1.25rem;
+        gap: 0.85rem;
       }
       @media (max-width: 550px) {
         .verified-grid { grid-template-columns: 1fr; }
         .farmer-profile-summary { flex-direction: column; text-align: center; }
+        .verify-input-group .btn { width: 100%; }
       }
       .verified-item {
         background: #f8fafc;
-        padding: 0.85rem 1rem;
+        padding: 0.75rem 0.85rem;
         border-radius: var(--radius-md);
         border: 1px solid var(--border-color);
       }
       .v-label {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 700;
         color: var(--text-muted);
         text-transform: uppercase;
@@ -178,17 +183,17 @@
         margin-bottom: 2px;
       }
       .v-value {
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         font-weight: 600;
         color: var(--text-primary);
       }
       .privacy-notice {
-        margin-top: 1.5rem;
-        padding: 0.85rem;
+        margin-top: 1.25rem;
+        padding: 0.75rem;
         background: #f0fdf4;
         border-radius: var(--radius-md);
         border: 1px solid #bbf7d0;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         color: #166534;
         display: flex;
         gap: 0.5rem;
@@ -196,7 +201,7 @@
       }
       .verify-footer-nav {
         text-align: center;
-        margin-top: 1.5rem;
+        margin-top: 1.25rem;
       }
     </style>
   </head>
@@ -209,7 +214,7 @@
 
     <main class="verify-card-container">
       <div class="verify-search-box">
-        <label for="verifyCardInput" class="filter-label" style="font-size: 0.85rem;">Enter Kisan Card Number to Verify</label>
+        <label for="verifyCardInput" class="filter-label" style="font-size: 0.8rem;">Enter Kisan Card Number to Verify</label>
         <div class="verify-input-group">
           <input id="verifyCardInput" class="verify-input" placeholder="e.g. KC-1001" onkeydown="if(event.key==='Enter') executeVerification()" />
           <button type="button" class="btn btn-primary" onclick="executeVerification()">
@@ -284,9 +289,9 @@
             <p id="verifyErrorMessage">No active record exists for this Kisan Card number.</p>
           </div>
         </div>
-        <div class="verify-body-content text-center py-4">
-          <p class="text-muted">Please double check the card number printed on the physical card or scan the QR code again.</p>
-          <button class="btn btn-outline mt-3" onclick="document.getElementById('verifyCardInput').focus()">Try Another ID</button>
+        <div class="verify-body-content text-center py-3">
+          <p class="text-muted" style="font-size: 0.85rem;">Please double check the card number printed on the physical card or scan the QR code again.</p>
+          <button class="btn btn-outline mt-2" onclick="document.getElementById('verifyCardInput').focus()">Try Another ID</button>
         </div>
       </div>
 
