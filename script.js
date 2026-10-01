@@ -1180,3 +1180,29 @@ document.addEventListener('DOMContentLoaded', () => {
   loadDashboardStats();
   setID(document.getElementById('cardInput').value || 'KC-1001');
 });
+
+function switchMobileCardFace(face) {
+  const front = document.getElementById('frontCardWrapper');
+  const back = document.getElementById('backCardWrapper');
+  const btnFront = document.getElementById('btnShowFront');
+  const btnBack = document.getElementById('btnShowBack');
+  const btnBoth = document.getElementById('btnShowBoth');
+
+  if (btnFront) btnFront.classList.remove('active');
+  if (btnBack) btnBack.classList.remove('active');
+  if (btnBoth) btnBoth.classList.remove('active');
+
+  if (face === 'front') {
+    if (front) front.style.display = 'flex';
+    if (back) back.style.display = 'none';
+    if (btnFront) btnFront.classList.add('active');
+  } else if (face === 'back') {
+    if (front) front.style.display = 'none';
+    if (back) back.style.display = 'flex';
+    if (btnBack) btnBack.classList.add('active');
+  } else {
+    if (front) front.style.display = 'flex';
+    if (back) back.style.display = 'flex';
+    if (btnBoth) btnBoth.classList.add('active');
+  }
+}

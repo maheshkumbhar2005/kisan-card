@@ -367,9 +367,22 @@
             </div>
           </div>
 
+          <!-- Mobile Card Face Switcher (Tabs) -->
+          <div class="mobile-card-switcher">
+            <button type="button" class="card-face-btn active" id="btnShowFront" onclick="switchMobileCardFace('front')">
+              🪪 Front Card
+            </button>
+            <button type="button" class="card-face-btn" id="btnShowBack" onclick="switchMobileCardFace('back')">
+              📄 Back Card (Land)
+            </button>
+            <button type="button" class="card-face-btn" id="btnShowBoth" onclick="switchMobileCardFace('both')">
+              📑 Both Cards
+            </button>
+          </div>
+
           <div class="card-preview-area" id="printContainer">
             <!-- FRONT CARD -->
-            <div class="card-scale-wrapper">
+            <div class="card-scale-wrapper" id="frontCardWrapper">
               <div class="card" id="card">
                 <div class="leaf"></div>
 
@@ -401,7 +414,7 @@
             </div>
 
             <!-- BACK CARD -->
-            <div class="card-scale-wrapper">
+            <div class="card-scale-wrapper" id="backCardWrapper">
               <div class="card back" id="cardBack">
                 <div class="back-header">
                   <div class="logo">A</div>

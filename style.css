@@ -1,5 +1,5 @@
 /* ==========================================================================
-   KISAN CARD PRO - COMPREHENSIVE RESPONSIVE DESIGN SYSTEM
+   KISAN CARD PRO - COMPREHENSIVE RESPONSIVE & MOBILE-FIRST DESIGN SYSTEM
    ========================================================================== */
 
 :root {
@@ -253,13 +253,18 @@ body {
   cursor: pointer;
   text-decoration: none;
   transition: all 0.2s ease;
-  min-height: 40px;
+  min-height: 42px;
+  user-select: none;
+}
+
+.btn:active {
+  transform: scale(0.98);
 }
 
 .btn-sm {
   padding: 0.4rem 0.75rem;
   font-size: 0.8rem;
-  min-height: 34px;
+  min-height: 36px;
 }
 
 .btn-primary {
@@ -278,10 +283,19 @@ body {
   border-color: var(--border-color);
 }
 
+.btn-secondary:hover {
+  background: var(--bg-muted);
+}
+
 .btn-outline {
   background: transparent;
   color: var(--text-secondary);
   border-color: var(--border-color);
+}
+
+.btn-outline:hover {
+  background: var(--bg-muted);
+  color: var(--text-primary);
 }
 
 .btn-save {
@@ -366,8 +380,8 @@ body {
 }
 
 .metric-icon-wrap {
-  width: 46px;
-  height: 46px;
+  width: 48px;
+  height: 48px;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -696,7 +710,7 @@ body {
   background: #f1f5f9;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  padding: 3px 6px;
+  padding: 4px 8px;
   cursor: pointer;
   font-size: 0.75rem;
   font-weight: 600;
@@ -704,7 +718,7 @@ body {
   color: var(--text-primary);
   display: inline-flex;
   align-items: center;
-  min-height: 28px;
+  min-height: 32px;
 }
 
 /* ==========================================================================
@@ -813,13 +827,13 @@ body {
 
 .search-input-field {
   width: 100%;
-  padding: 0.6rem 2rem 0.6rem 2rem;
+  padding: 0.65rem 2rem 0.65rem 2rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   font-family: var(--font-main);
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   background: #ffffff;
-  min-height: 40px;
+  min-height: 42px;
 }
 
 .search-input-field:focus {
@@ -832,10 +846,10 @@ body {
   right: 8px;
   background: #e2e8f0;
   border: none;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   cursor: pointer;
   display: none;
   align-items: center;
@@ -844,14 +858,14 @@ body {
 
 .filter-select {
   width: 100%;
-  padding: 0.6rem 0.65rem;
+  padding: 0.65rem 0.75rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   font-family: var(--font-main);
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   background: #ffffff;
   color: var(--text-primary);
-  min-height: 40px;
+  min-height: 42px;
 }
 
 /* Active Filter Chips */
@@ -870,7 +884,7 @@ body {
   color: #0369a1;
   font-size: 0.7rem;
   font-weight: 600;
-  padding: 2px 7px;
+  padding: 3px 8px;
   border-radius: var(--radius-full);
   display: inline-flex;
   align-items: center;
@@ -881,7 +895,7 @@ body {
 .filter-chip button {
   background: transparent;
   border: none;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   cursor: pointer;
   color: #0369a1;
   font-weight: bold;
@@ -998,7 +1012,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   border: none;
-  min-height: 34px;
+  min-height: 36px;
 }
 
 /* Pagination Bar */
@@ -1019,7 +1033,7 @@ body {
 
 .pagination-controls {
   display: flex;
-  gap: 3px;
+  gap: 4px;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -1027,15 +1041,15 @@ body {
 .page-btn {
   background: #ffffff;
   border: 1px solid var(--border-color);
-  padding: 0.35rem 0.65rem;
+  padding: 0.4rem 0.75rem;
   border-radius: 6px;
   font-family: var(--font-main);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-secondary);
   cursor: pointer;
-  min-height: 32px;
-  min-width: 32px;
+  min-height: 36px;
+  min-width: 36px;
 }
 
 .page-btn.active {
@@ -1096,12 +1110,12 @@ body {
 }
 
 .field-group input {
-  padding: 0.6rem 0.75rem;
+  padding: 0.65rem 0.85rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   font-family: var(--font-main);
-  font-size: 0.875rem;
-  min-height: 40px;
+  font-size: 0.9rem;
+  min-height: 42px;
 }
 
 .field-group input:focus {
@@ -1160,7 +1174,7 @@ body {
   gap: 0.5rem;
 }
 
-/* Card Preview Responsive Scaler */
+/* Card Preview Responsive Scaler & Mobile Side Switcher */
 .preview-section {
   position: sticky;
   top: 80px;
@@ -1181,13 +1195,41 @@ body {
   flex-wrap: wrap;
 }
 
+/* Mobile Card Face Switcher (Tabs for Front & Back) */
+.mobile-card-switcher {
+  display: none;
+  background: var(--bg-muted);
+  padding: 3px;
+  border-radius: var(--radius-md);
+  margin-bottom: 0.75rem;
+  width: 100%;
+}
+
+.card-face-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.5rem;
+  font-family: var(--font-main);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.card-face-btn.active {
+  background: #ffffff;
+  color: var(--primary-dark);
+  box-shadow: var(--shadow-sm);
+}
+
 .card-preview-area {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   align-items: center;
   width: 100%;
-  overflow: hidden;
 }
 
 /* RESPONSIVE SCALABLE KISAN CARD CONTAINER */
@@ -1196,7 +1238,6 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: visible;
 }
 
 .card {
@@ -1480,7 +1521,8 @@ body {
 /* Mobile Devices (Screens <= 640px) */
 @media (max-width: 640px) {
   .app-header {
-    position: relative;
+    position: sticky;
+    top: 0;
   }
   .header-inner {
     flex-direction: column;
@@ -1554,24 +1596,26 @@ body {
     height: 1px;
   }
 
-  /* Automatic Card Scaling on Small Screens */
+  /* Show Card Face Switcher on Mobile */
+  .mobile-card-switcher {
+    display: flex;
+  }
+
+  /* Dynamic Mobile Scale on Phones */
   .card-scale-wrapper {
-    max-width: 100%;
-    overflow-x: auto;
-    padding: 6px 0;
-    justify-content: flex-start;
+    overflow: hidden;
+    padding: 4px 0;
   }
   .card {
-    /* Scale gracefully to fit 320px-360px phones without cut off */
-    transform: scale(0.78);
-    margin: -25px -45px;
+    transform: scale(0.76);
+    margin: -28px -48px;
   }
 }
 
-@media (max-width: 400px) {
+@media (max-width: 380px) {
   .card {
-    transform: scale(0.68);
-    margin: -35px -65px;
+    transform: scale(0.66);
+    margin: -40px -68px;
   }
 }
 
