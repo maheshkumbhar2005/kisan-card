@@ -1739,3 +1739,98 @@ document.addEventListener('DOMContentLoaded', () => {
     setID(id);
   });
 });
+
+// ==========================================================================
+// 9. REAL-TIME DUPLICATE RECORD DETECTION
+// ==========================================================================
+let duplicateCheckTimer = null;
+let currentDuplicateFarmer = null;
+
+function triggerDuplicateCheck() {
+  clearTimeout(duplicateCheckTimer);
+  duplicateCheckTimer = setTimeout(checkDuplicateOnInput, 400);
+}
+
+async function checkDuplicateOnInput() {
+  const name = document.getElementById('nameInput')?.value.trim();
+  const aadhaar = document.getElementById('aadhaarInput')?.value.trim();
+  const village = document.getElementById('villageInput')?.value.trim();
+  const survey = document.getElementById('surveyInput')?.value.trim();
+  const card = document.getElementById('cardInput')?.value.trim();
+  const editingId = document.getElementById('saveBtn')?.dataset.editingId || null;
+
+  if (!name && !aadhaar && !village) {
+    dismissDuplicateWarning();
+    return;
+  }
+
+  const farmerData = {
+    farmerName: name,
+    aadhaar,
+    village,
+    survey,
+    cardNumber: card
+  };
+
+  try {
+    const res = await fetch(`${API_BASE}/check-duplicate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({ farmerData, excludeId: editingId })
+    });
+
+    if (!res.ok) return;
+    const data = await res.json();
+
+    if (data.isDuplicate && data.existingFarmer) {
+      currentDuplicateFarmer = data.existingFarmer;
+      showDuplicateWarning(data.matchReason, data.existingFarmer);
+    } else {
+      dismissDuplicateWarning();
+    }
+  } catch (err) {
+    // Graceful fallback
+  }
+}
+
+function showDuplicateWarning(reason, existing) {
+  const banner = document.getElementById('duplicateWarningBanner');
+  const textEl = document.getElementById('dupWarningText');
+  if (!banner || !textEl) return;
+
+  const isMr = currentLanguage === 'mr';
+  const nameDisplay = existing.farmerName || 'Farmer';
+  const cardDisplay = existing.cardNumber || 'KC-XXXX';
+  const villageDisplay = existing.village || '-';
+
+  if (isMr) {
+    textEl.innerText = `यापूर्वीच ${nameDisplay} (${villageDisplay}) यांच्या नावे नोंदणी आढळली आहे (कार्ड क्र: ${cardDisplay}). ${reason}.`;
+  } else {
+    textEl.innerText = `A record for "${nameDisplay}" (${villageDisplay}) already exists with Card No: ${cardDisplay}. (${reason})`;
+  }
+
+  banner.style.display = 'block';
+}
+
+function dismissDuplicateWarning() {
+  const banner = document.getElementById('duplicateWarningBanner');
+  if (banner) banner.style.display = 'none';
+  currentDuplicateFarmer = null;
+}
+
+function loadDuplicateIntoStudio() {
+  if (!currentDuplicateFarmer || !currentDuplicateFarmer.id) return;
+  loadFarmerIntoStudio(currentDuplicateFarmer.id);
+  dismissDuplicateWarning();
+}
+
+// Global Accessibility Keyboard Listeners
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeLoginModal();
+    closeCameraModal();
+    closePhotoEditorModal();
+    closeSignatureModal();
+    closePrintPreviewModal();
+  }
+});

@@ -1864,3 +1864,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   font-weight: 700;
   color: #475569;
 }
+
+/* DUPLICATE WARNING BOX */
+.duplicate-warning-box {
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  border-left: 5px solid #f59e0b;
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  margin-top: 1rem;
+  color: #92400e;
+  animation: fadeIn 0.2s ease;
+}

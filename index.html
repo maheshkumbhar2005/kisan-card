@@ -202,7 +202,7 @@
 
             <div class="field-group">
               <label for="nameInput" data-i18n="labelNameEn">Farmer Name (English) *</label>
-              <input id="nameInput" placeholder="e.g. Ramesh Patil" data-required="true" oninput="translateName(this.value); clearError(this)" />
+              <input id="nameInput" placeholder="e.g. Ramesh Patil" data-required="true" oninput="translateName(this.value); clearError(this); triggerDuplicateCheck();" />
             </div>
 
             <div class="field-group">
@@ -228,7 +228,7 @@
             <div class="field-group full-width">
               <label for="aadhaarInput" data-i18n="labelAadhaar">Aadhaar Number (12 digits)</label>
               <div class="input-with-action">
-                <input id="aadhaarInput" placeholder="XXXX XXXX XXXX" maxlength="14" oninput="handleAadhaarInput(this)" />
+                <input id="aadhaarInput" placeholder="XXXX XXXX XXXX" maxlength="14" oninput="handleAadhaarInput(this); triggerDuplicateCheck();" />
                 <label class="checkbox-inline">
                   <input type="checkbox" id="maskAadhaarCheck" checked onchange="toggleAadhaarMask()" />
                   <span data-i18n="labelMask">Mask</span>
@@ -238,12 +238,12 @@
 
             <div class="field-group">
               <label for="villageInput" data-i18n="labelVillage">Village *</label>
-              <input id="villageInput" placeholder="e.g. Takarkheda" data-required="true" oninput="document.getElementById('village').innerText=this.value || 'Takarkheda'; clearError(this)" />
+              <input id="villageInput" placeholder="e.g. Takarkheda" data-required="true" oninput="document.getElementById('village').innerText=this.value || 'Takarkheda'; clearError(this); triggerDuplicateCheck();" />
             </div>
 
             <div class="field-group">
               <label for="surveyInput" data-i18n="labelSurvey">Survey / Gat No.</label>
-              <input id="surveyInput" placeholder="e.g. 213" oninput="document.getElementById('survey').innerText=this.value || '213'" />
+              <input id="surveyInput" placeholder="e.g. 213" oninput="document.getElementById('survey').innerText=this.value || '213'; triggerDuplicateCheck();" />
             </div>
 
             <div class="field-group">
@@ -307,6 +307,21 @@
               <button type="button" class="btn btn-sm btn-secondary" onclick="openCameraModal()">📷 <span data-i18n="btnCamera">Camera</span></button>
               <button type="button" class="btn btn-sm btn-outline" id="btnEditPhoto" onclick="openPhotoEditorModal()" title="Crop, rotate and reposition photo">✂️ Edit</button>
               <button type="button" class="btn btn-sm btn-danger-soft" onclick="resetPhoto()">↺ <span data-i18n="btnReset">Reset</span></button>
+            </div>
+          </div>
+
+                    <!-- Real-Time Duplicate Warning Alert Banner -->
+          <div id="duplicateWarningBanner" class="duplicate-warning-box" style="display: none;" role="alert" aria-live="polite">
+            <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
+              <span style="font-size: 1.25rem;">⚠️</span>
+              <div style="flex: 1;">
+                <strong id="dupWarningTitle">Potential Duplicate Record Found:</strong>
+                <p id="dupWarningText" style="font-size: 0.82rem; margin: 2px 0 6px 0; color: #78350f;"></p>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.4rem;">
+                  <button type="button" class="btn btn-sm btn-outline" id="btnEditDuplicate" onclick="loadDuplicateIntoStudio()">✏️ Edit Existing Record</button>
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="dismissDuplicateWarning()">Dismiss</button>
+                </div>
+              </div>
             </div>
           </div>
 
