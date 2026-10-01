@@ -1,86 +1,334 @@
-// Global State & Cache
-let savedFarmers = [];
-let defaultPhotoSrc = 'farmer-placeholder.svg';
+// ==========================================================================
+// KISAN CARD PRO - CLIENT APPLICATION LOGIC
+// Refined: Colors, Typography, Photo Alignment, QR Verification, CR-80 Print,
+// Language Toggle (English/Marathi) & Accessibility
+// ==========================================================================
+
+const API_BASE = '/api/farmers';
+const AUTH_BASE = '/api/auth';
+const defaultPhotoSrc = 'farmer-placeholder.svg';
 let cameraStreamTrack = null;
-let activeView = 'dashboard';
 
-// Admin Auth State
-const authState = {
-  token: localStorage.getItem('kisan_admin_token') || '',
-  user: JSON.parse(localStorage.getItem('kisan_admin_user') || 'null'),
-  isAuthenticated: false
-};
-
-// Filter, Sort, Pagination & Display State
-const filterState = {
+// Registry State
+let registryState = {
   search: '',
-  village: 'all',
-  status: 'all',
-  sortBy: 'createdAt',
-  sortOrder: 'desc',
+  village: '',
+  status: '',
+  sortBy: 'date_desc',
   page: 1,
-  limit: 10,
+  limit: 8,
+  total: 0,
   totalPages: 1,
-  totalRecords: 0,
-  viewMode: 'grid', // 'grid' | 'table'
-  availableVillages: []
+  viewMode: 'table'
 };
 
-// Debounce timer for search
 let searchDebounceTimer = null;
+let currentLanguage = localStorage.getItem('kisan_lang') || 'en';
 
-// Translation dictionary
-const marathiMap = {
-  ramesh: 'रमेश', suresh: 'सुरेश', mahesh: 'महेश', ganesh: 'गणेश',
-  patil: 'पाटील', deshmukh: 'देशमुख', jadhav: 'जाधव', shinde: 'शिंदे',
-  kadam: 'कदम', chavan: 'चव्हाण', pawar: 'पवार', more: 'मोरे',
-  gaikwad: 'गायकवाड', sonawane: 'सोनवणे', jagtap: 'जगताप', bhosale: 'भोसले'
+// ==========================================================================
+// BILINGUAL TRANSLATION DICTIONARY (ENGLISH & MARATHI)
+// ==========================================================================
+const translations = {
+  en: {
+    langLabel: 'मराठी',
+    appTitle: 'KISAN CARD <span>PRO</span>',
+    appSubtitle: 'Department of Agriculture • Digital Identity Suite',
+    navDashboard: 'Dashboard',
+    navGenerator: 'Generator',
+    navRegistry: 'Registry',
+    navVerify: 'Verify Card',
+    navAdmin: 'Admin',
+    navNewCard: 'New Card',
+
+    // Dashboard
+    dashHeroTitle: 'Agricultural Identity & Analytics Intelligence',
+    dashHeroSubtitle: 'Real-time analytics for registered farmers, village demographic distribution, and land parcels.',
+    dashBtnGenerate: 'Generate Kisan Card',
+    dashBtnRefresh: 'Refresh Analytics',
+    metricTotalFarmers: 'Total Farmers Registered',
+    badgeLive: 'Live Count',
+    metricActive: 'active',
+    metricPending: 'pending',
+    metricVillages: 'Villages Covered',
+    badgeClusters: 'Clusters',
+    metricActiveClusters: 'Active rural clusters',
+    metricLandArea: 'Total Land Area',
+    badgeHectares: 'Hectares',
+    metricAvgHolding: 'Avg:',
+    metricFarmer: 'farmer',
+    dashVillageDist: '🏘️ Village-wise Farmer Distribution',
+    dashRecentReg: '⏱️ Recent Registrations',
+    viewAll: 'View All →',
+    loadingStats: 'Loading village statistics...',
+    loadingRecent: 'Loading recent registrations...',
+
+    // Form
+    formTitle: '📝 Farmer Details',
+    badgeLiveSync: 'Live Sync',
+    labelCardNumber: 'Card Number',
+    labelNameEn: 'Farmer Name (English) *',
+    labelNameMr: 'Farmer Name (Marathi / मराठी)',
+    labelFatherEn: "Father's Name (English) *",
+    labelFatherMr: "Father's Name (Marathi / मराठी)",
+    labelAddress: 'Address *',
+    labelAadhaar: 'Aadhaar Number (12 digits)',
+    labelMask: 'Mask',
+    labelVillage: 'Village *',
+    labelSurvey: 'Survey / Gat No.',
+    labelSubSurvey: 'Sub-Survey / Hissa',
+    labelArea: 'Land Area (Hectare)',
+    labelFarmerPhoto: 'Farmer Photo',
+    defaultPhoto: 'Default image selected',
+    btnUpload: 'Upload',
+    btnCamera: 'Camera',
+    btnReset: 'Reset',
+    btnSaveFarmer: 'Save Farmer',
+    btnClearForm: 'Clear Form',
+
+    // Preview
+    previewTitle: '🪪 Live Card Preview',
+    faceFront: 'Front Card',
+    faceBack: 'Back Card (Land)',
+    faceBoth: 'Both Cards',
+    cardHeaderTitle: 'KISAN CARD',
+    cardHeaderSub: 'Department of Agriculture • Maharashtra',
+    cardLblName: 'Kisan Name:',
+    cardLblNameMr: 'नाव (मराठी):',
+    cardLblFather: 'Father Name:',
+    cardLblFatherMr: 'वडिलांचे नाव:',
+    cardLblAddress: 'Address:',
+    cardLblAadhaar: 'Aadhaar:',
+    cardBottomBar: 'AGRI STACK • DIGITAL FARMER ID',
+    cardBackTagline: 'Digital Farm Holding Certificate',
+    cardBackScan: 'SCAN TO VERIFY',
+    cardBackPortal: 'AgriStack Portal',
+    cardLandHeading: '🌾 Land Holding Details',
+    thVillage: 'Village',
+    thSurvey: 'Survey',
+    thSub: 'Sub',
+    thArea: 'Area (Hectare)',
+    cardBackNotice: '* This digital identity card is valid across all state agriculture departments, subsidy programs & crop insurance schemes.',
+
+    // Registry
+    registryTitle: '📁 Registered Farmers Directory',
+    loadingFarmers: 'Loading registered farmers...',
+    btnExportCsv: 'Export CSV',
+    btnBackup: 'Backup',
+    btnRestore: 'Restore',
+    btnNewCard: 'Add Farmer',
+    lblVillageFilter: 'Village:',
+    optAllVillages: 'All Villages',
+    lblStatusFilter: 'Status:',
+    optAllStatus: 'All Status',
+    optActive: 'Active',
+    optPending: 'Pending',
+    lblSort: 'Sort By:',
+    sortDateDesc: 'Newest First',
+    sortDateAsc: 'Oldest First',
+    sortNameAsc: 'Name (A-Z)',
+    sortNameDesc: 'Name (Z-A)',
+    sortCardAsc: 'Card No (Asc)',
+    sortAreaDesc: 'Area (High to Low)',
+    colCardNo: 'Card No ⬍',
+    colFarmerName: 'Farmer Name ⬍',
+    colVillage: 'Village ⬍',
+    colSurvey: 'Survey/Gat',
+    colArea: 'Area (Ha) ⬍',
+    colStatus: 'Status',
+    colActions: 'Actions'
+  },
+  mr: {
+    langLabel: 'English',
+    appTitle: 'किसान कार्ड <span>प्रो</span>',
+    appSubtitle: 'कृषी विभाग • डिजिटल ओळख प्रणाली',
+    navDashboard: 'डॅशबोर्ड',
+    navGenerator: 'कार्ड जनरेटर',
+    navRegistry: 'शेतकरी यादी',
+    navVerify: 'कार्ड पडताळणी',
+    navAdmin: 'अ‍ॅडमिन',
+    navNewCard: 'नवीन कार्ड',
+
+    // Dashboard
+    dashHeroTitle: 'कृषी ओळख व डिजिटल विश्लेषण प्रणाली',
+    dashHeroSubtitle: 'नोंदणीकृत शेतकरी, गावनिहाय वितरण व शेतजमिनीचे रिअल-टाइम विश्लेषण.',
+    dashBtnGenerate: 'किसान कार्ड बनवा',
+    dashBtnRefresh: 'माहिती ताजी करा',
+    metricTotalFarmers: 'एकूण नोंदणीकृत शेतकरी',
+    badgeLive: 'थेट संख्या',
+    metricActive: 'सक्रिय',
+    metricPending: 'प्रलंबित',
+    metricVillages: 'समाविष्ट गावे',
+    badgeClusters: 'मंडळे',
+    metricActiveClusters: 'सक्रिय ग्रामीण क्षेत्रे',
+    metricLandArea: 'एकूण जमीन क्षेत्रफळ',
+    badgeHectares: 'हेक्टर',
+    metricAvgHolding: 'सरासरी:',
+    metricFarmer: 'शेतकरी',
+    dashVillageDist: '🏘️ गावनिहाय शेतकरी संख्या',
+    dashRecentReg: '⏱️ अलीकडील नोंदणी',
+    viewAll: 'सर्व पहा →',
+    loadingStats: 'गाव आकडेवारी लोड होत आहे...',
+    loadingRecent: 'नोंदणी लोड होत आहे...',
+
+    // Form
+    formTitle: '📝 शेतकरी तपशील',
+    badgeLiveSync: 'थेट सिंक',
+    labelCardNumber: 'कार्ड क्रमांक',
+    labelNameEn: 'शेतकऱ्याचे नाव (इंग्रजी) *',
+    labelNameMr: 'शेतकऱ्याचे नाव (मराठी / देवनागरी)',
+    labelFatherEn: "वडिलांचे नाव (इंग्रजी) *",
+    labelFatherMr: "वडिलांचे नाव (मराठी / देवनागरी)",
+    labelAddress: 'पत्ता *',
+    labelAadhaar: 'आधार क्रमांक (१२ अंक)',
+    labelMask: 'मास्क करा',
+    labelVillage: 'गाव *',
+    labelSurvey: 'सर्व्हे / गट क्र.',
+    labelSubSurvey: 'उप-सर्व्हे / हिस्सा',
+    labelArea: 'जमीन क्षेत्रफळ (हेक्टर)',
+    labelFarmerPhoto: 'शेतकऱ्याचा फोटो',
+    defaultPhoto: 'डीफॉल्ट फोटो निवडला आहे',
+    btnUpload: 'अपलोड',
+    btnCamera: 'कॅमेरा',
+    btnReset: 'रीसेट',
+    btnSaveFarmer: 'शेतकरी जतन करा',
+    btnClearForm: 'फॉर्म साफ करा',
+
+    // Preview
+    previewTitle: '🪪 थेट कार्ड पूर्वावलोकन',
+    faceFront: 'पुढील बाजू',
+    faceBack: 'मागील बाजू (जमीन)',
+    faceBoth: 'दोन्ही बाजू',
+    cardHeaderTitle: 'किसान ओळखपत्र',
+    cardHeaderSub: 'कृषी विभाग • महाराष्ट्र शासन',
+    cardLblName: 'शेतकऱ्याचे नाव:',
+    cardLblNameMr: 'नाव (मराठी):',
+    cardLblFather: 'वडिलांचे नाव:',
+    cardLblFatherMr: 'वडिलांचे नाव (मराठी):',
+    cardLblAddress: 'पत्ता:',
+    cardLblAadhaar: 'आधार क्रमांक:',
+    cardBottomBar: 'अ‍ॅग्रीस्टॅक • डिजिटल शेतकरी ओळख',
+    cardBackTagline: 'डिजिटल शेतजमीन धारणा प्रमाणपत्र',
+    cardBackScan: 'पडताळणीसाठी स्कॅन करा',
+    cardBackPortal: 'अ‍ॅग्रीस्टॅक पोर्टल',
+    cardLandHeading: '🌾 शेतजमीन तपशील',
+    thVillage: 'गाव',
+    thSurvey: 'सर्व्हे क्र.',
+    thSub: 'हिस्सा',
+    thArea: 'क्षेत्रफळ (हेक्टर)',
+    cardBackNotice: '* हे डिजिटल ओळखपत्र सर्व शासकीय योजना, अनुदान व पीक विम्यासाठी अधिकृतपणे वैध आहे.',
+
+    // Registry
+    registryTitle: '📁 नोंदणीकृत शेतकरी यादी',
+    loadingFarmers: 'शेतकऱ्यांची यादी लोड होत आहे...',
+    btnExportCsv: 'CSV निर्यात',
+    btnBackup: 'बॅकअप',
+    btnRestore: 'रिस्टोअर',
+    btnNewCard: 'नवीन जोडा',
+    lblVillageFilter: 'गाव निवडा:',
+    optAllVillages: 'सर्व गावे',
+    lblStatusFilter: 'स्थिती:',
+    optAllStatus: 'सर्व स्थिती',
+    optActive: 'सक्रिय',
+    optPending: 'प्रलंबित',
+    lblSort: 'क्रमवारी:',
+    sortDateDesc: 'नवीनतम प्रथम',
+    sortDateAsc: 'जुने प्रथम',
+    sortNameAsc: 'नाव (A-Z)',
+    sortNameDesc: 'नाव (Z-A)',
+    sortCardAsc: 'कार्ड क्र. (चढता)',
+    sortAreaDesc: 'क्षेत्रफळ (जास्त ते कमी)',
+    colCardNo: 'कार्ड क्र. ⬍',
+    colFarmerName: 'शेतकऱ्याचे नाव ⬍',
+    colVillage: 'गाव ⬍',
+    colSurvey: 'सर्व्हे/गट',
+    colArea: 'क्षेत्रफळ (हे.) ⬍',
+    colStatus: 'स्थिती',
+    colActions: 'कृती'
+  }
+};
+
+function updateLanguageUI() {
+  const dict = translations[currentLanguage] || translations.en;
+  document.getElementById('currentLangLabel').innerText = dict.langLabel;
+
+  // Apply to all data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (dict[key]) {
+      el.innerHTML = dict[key];
+    }
+  });
+
+  // Re-render dynamic components
+  if (document.getElementById('viewDashboard').classList.contains('active')) {
+    loadDashboardStats();
+  }
+  if (document.getElementById('viewRegistry').classList.contains('active')) {
+    fetchFilteredFarmers();
+  }
+}
+
+function toggleLanguage() {
+  currentLanguage = currentLanguage === 'en' ? 'mr' : 'en';
+  localStorage.setItem('kisan_lang', currentLanguage);
+  updateLanguageUI();
+}
+
+// ==========================================================================
+// TRANSLITERATION ENGINE (English -> Marathi)
+// ==========================================================================
+const nameMap = {
+  ramesh: 'रमेश', suresh: 'सुरेश', mahesh: 'महेश', ganesh: 'गणेश', dinesh: 'दिनेश',
+  rajesh: 'राजेश', patil: 'पाटील', deshmukh: 'देशमुख', shinde: 'शिंदे', pawar: 'पवार',
+  jadhav: 'जाधव', kale: 'काळे', kadam: 'कदम', gaikwad: 'गायकवाड', chavan: 'चव्हाण',
+  more: 'मोरे', bhosale: 'भोसले', thombre: 'ठोंबरे', kumbhar: 'कुंभार', wagh: 'वाघ',
+  sambhaji: 'संभाजी', shivaji: 'शिवाजी', anand: 'आनंद', santosh: 'संतोष', vilas: 'विलास',
+  sunil: 'सुनील', anil: 'अनिल', pradeep: 'प्रदीप', sachin: 'सचिन', vijay: 'विजय',
+  ashok: 'अशोक', prakash: 'प्रकाश', sanjay: 'संजय', nitin: 'नितीन', rahul: 'राहुल',
+  pandurang: 'पांडुरंग', balasaheb: 'बाळासाहेब', baban: 'बबन', narayan: 'नारायण',
+  dattatray: 'दत्तात्रय', tukaram: 'तुकाराम', maruti: 'मारुती', bhagwan: 'भगवान'
 };
 
 function autoTranslate(text) {
   if (!text) return '';
-  const words = text.toLowerCase().split(/\s+/);
-  const translated = words.map((w) => marathiMap[w] || w);
-  return translated.join(' ');
+  return text.toLowerCase().split(/\s+/).map(word => {
+    const clean = word.replace(/[^a-z]/g, '');
+    return nameMap[clean] || word;
+  }).join(' ');
 }
 
-// ----------------------------------------------------
-// AUTHENTICATION & ACCESS CONTROL
-// ----------------------------------------------------
-
+// ==========================================================================
+// AUTHENTICATION & SECURITY HEADERS
+// ==========================================================================
 function getAuthHeaders() {
-  const headers = { 'Content-Type': 'application/json' };
-  if (authState.token) {
-    headers['Authorization'] = `Bearer ${authState.token}`;
-  }
-  return headers;
+  const token = localStorage.getItem('kisan_admin_token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
 }
 
 async function checkAuthStatus() {
-  if (!authState.token) {
+  const token = localStorage.getItem('kisan_admin_token');
+  if (!token) {
     updateAuthUI(false);
-    return;
+    return false;
   }
-
   try {
-    const res = await fetch('/api/auth/me', {
-      headers: { 'Authorization': `Bearer ${authState.token}` }
-    });
+    const res = await fetch(`${AUTH_BASE}/verify`, { credentials: 'include', headers: getAuthHeaders() });
     const data = await res.json();
     if (data.authenticated) {
-      authState.isAuthenticated = true;
-      authState.user = data.user;
-      updateAuthUI(true);
+      updateAuthUI(true, data.username || 'Admin');
+      return true;
     } else {
-      logoutAdmin(false);
+      localStorage.removeItem('kisan_admin_token');
+      updateAuthUI(false);
+      return false;
     }
   } catch (err) {
     updateAuthUI(false);
+    return false;
   }
 }
 
-function updateAuthUI(isLoggedIn) {
-  authState.isAuthenticated = isLoggedIn;
+function updateAuthUI(isLoggedIn, username = 'Admin') {
   const loginBtn = document.getElementById('loginBtn');
   const userBadge = document.getElementById('loggedInUserBadge');
   const userDisplay = document.getElementById('adminUserDisplay');
@@ -88,161 +336,134 @@ function updateAuthUI(isLoggedIn) {
   if (isLoggedIn) {
     if (loginBtn) loginBtn.style.display = 'none';
     if (userBadge) userBadge.style.display = 'inline-flex';
-    if (userDisplay) userDisplay.innerText = authState.user?.username || 'Admin';
+    if (userDisplay) userDisplay.innerText = username;
   } else {
     if (loginBtn) loginBtn.style.display = 'inline-flex';
     if (userBadge) userBadge.style.display = 'none';
   }
 }
 
-function openLoginModal(pendingTargetView = null) {
+function openLoginModal(onSuccessCallback = null) {
   const modal = document.getElementById('loginModal');
-  if (modal) {
-    modal.classList.add('active');
-    modal.dataset.pendingView = pendingTargetView || '';
-    document.getElementById('adminPasswordInput').value = '';
-    const errBox = document.getElementById('loginErrorBox');
-    if (errBox) errBox.style.display = 'none';
-    setTimeout(() => document.getElementById('adminPasswordInput').focus(), 100);
-  }
+  const errBox = document.getElementById('loginErrorMsg');
+  if (errBox) errBox.innerHTML = '';
+  modal.classList.add('active');
+  window._authSuccessCallback = onSuccessCallback;
+  setTimeout(() => document.getElementById('adminUsername')?.focus(), 100);
 }
 
 function closeLoginModal() {
   const modal = document.getElementById('loginModal');
-  if (modal) modal.classList.remove('active');
+  modal.classList.remove('active');
+  window._authSuccessCallback = null;
 }
 
 async function handleAdminLogin(event) {
   event.preventDefault();
-  const username = document.getElementById('adminUsernameInput').value.trim();
-  const password = document.getElementById('adminPasswordInput').value;
-  const errBox = document.getElementById('loginErrorBox');
+  const u = document.getElementById('adminUsername').value.trim();
+  const p = document.getElementById('adminPassword').value;
+  const errBox = document.getElementById('loginErrorMsg');
   const submitBtn = document.getElementById('loginSubmitBtn');
 
   submitBtn.disabled = true;
-  submitBtn.innerText = 'Verifying...';
-  if (errBox) errBox.style.display = 'none';
+  submitBtn.innerText = 'Authenticating...';
+  errBox.innerHTML = '';
 
   try {
-    const res = await fetch('/api/auth/login', {
+    const res = await fetch(`${AUTH_BASE}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username: u, password: p }),
+      credentials: 'include'
     });
-
     const data = await res.json();
-    if (!res.ok || !data.success) {
-      throw new Error(data.error || 'Authentication failed');
-    }
+    if (!res.ok) throw new Error(data.error || 'Authentication failed');
 
-    authState.token = data.token;
-    authState.user = data.user;
-    authState.isAuthenticated = true;
-
-    localStorage.setItem('kisan_admin_token', data.token);
-    localStorage.setItem('kisan_admin_user', JSON.stringify(data.user));
-
-    updateAuthUI(true);
+    if (data.token) localStorage.setItem('kisan_admin_token', data.token);
+    updateAuthUI(true, data.username || u);
     closeLoginModal();
 
-    const pendingView = document.getElementById('loginModal')?.dataset.pendingView;
-    if (pendingView) {
-      switchView(pendingView);
-    } else {
-      if (activeView === 'registry') fetchFilteredFarmers();
+    if (typeof window._authSuccessCallback === 'function') {
+      window._authSuccessCallback();
     }
   } catch (err) {
-    if (errBox) {
-      errBox.innerText = `⚠️ ${err.message}`;
-      errBox.style.display = 'block';
-    }
+    errBox.innerHTML = `⚠️ ${err.message}`;
   } finally {
     submitBtn.disabled = false;
-    submitBtn.innerText = 'Sign In as Admin';
+    submitBtn.innerText = 'Authenticate';
   }
 }
 
-function logoutAdmin(showAlert = true) {
-  authState.token = '';
-  authState.user = null;
-  authState.isAuthenticated = false;
-
+async function logoutAdmin() {
+  try {
+    await fetch(`${AUTH_BASE}/logout`, { method: 'POST', headers: getAuthHeaders(), credentials: 'include' });
+  } catch (e) {}
   localStorage.removeItem('kisan_admin_token');
-  localStorage.removeItem('kisan_admin_user');
-
   updateAuthUI(false);
-  if (showAlert) alert('Logged out successfully.');
+  switchView('dashboard');
+}
 
-  if (activeView === 'studio' || activeView === 'registry') {
-    switchView('dashboard');
+async function handleProtectedNavigation(targetView) {
+  const authed = await checkAuthStatus();
+  if (authed) {
+    switchView(targetView);
+  } else {
+    openLoginModal(() => {
+      switchView(targetView);
+    });
   }
 }
 
-function handleProtectedNavigation(viewName) {
-  if (viewName === 'studio' || viewName === 'registry') {
-    if (!authState.isAuthenticated) {
-      openLoginModal(viewName);
-      return;
-    }
+// ==========================================================================
+// AADHAAR & INPUT FORMATTERS
+// ==========================================================================
+function formatAadhaar(val) {
+  if (!val) return '';
+  const digits = val.replace(/\D/g, '').slice(0, 12);
+  const parts = [];
+  for (let i = 0; i < digits.length; i += 4) {
+    parts.push(digits.slice(i, i + 4));
   }
-  switchView(viewName);
+  return parts.join(' ');
 }
 
-// Format and Mask Aadhaar
-function formatAadhaar(value) {
-  const digits = String(value || '').replace(/\D/g, '').slice(0, 12);
-  if (!digits) return '';
-  return digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
-}
-
-function maskAadhaar(value) {
-  const formatted = formatAadhaar(value);
-  const parts = formatted.split(' ');
-  if (parts.length === 3 && parts[2].length === 4) {
-    return 'XXXX XXXX ' + parts[2];
+function maskAadhaar(val) {
+  if (!val) return 'XXXX XXXX XXXX';
+  const clean = val.replace(/\D/g, '');
+  if (clean.length === 12) {
+    return 'XXXX XXXX ' + clean.slice(8);
   }
-  return formatted ? 'XXXX XXXX ' + formatted.slice(-4).trim() : 'XXXX XXXX XXXX';
+  return 'XXXX XXXX XXXX';
 }
 
 function handleAadhaarInput(el) {
   const formatted = formatAadhaar(el.value);
   el.value = formatted;
-  toggleAadhaarMask();
+  const isMasked = document.getElementById('maskAadhaarCheck').checked;
+  const displayVal = isMasked ? maskAadhaar(formatted) : (formatted || 'XXXX XXXX XXXX');
+  document.getElementById('aadhaar').innerText = displayVal;
 }
 
 function toggleAadhaarMask() {
-  const raw = document.getElementById('aadhaarInput').value;
+  const rawInput = document.getElementById('aadhaarInput').value;
   const isMasked = document.getElementById('maskAadhaarCheck').checked;
-  const displayEl = document.getElementById('aadhaar');
-
-  if (!raw) {
-    displayEl.innerText = 'XXXX XXXX XXXX';
-    return;
-  }
-  displayEl.innerText = isMasked ? maskAadhaar(raw) : formatAadhaar(raw);
+  document.getElementById('aadhaar').innerText = isMasked ? maskAadhaar(rawInput) : (rawInput || 'XXXX XXXX XXXX');
 }
 
-// Live Translators
 function translateName(val) {
-  document.getElementById('name_en').innerText = val || 'Example Name';
-  const autoMr = autoTranslate(val);
+  document.getElementById('name_en').innerText = val || 'Ramesh Patil';
   const mrInput = document.getElementById('nameMrInput');
-  if (!mrInput.value || mrInput.dataset.autoGenerated === 'true') {
-    mrInput.value = autoMr;
-    mrInput.dataset.autoGenerated = 'true';
-    document.getElementById('name_mr').innerText = autoMr || 'उदा. रमेश पाटील';
-  }
+  const translated = autoTranslate(val);
+  mrInput.value = translated;
+  document.getElementById('name_mr').innerText = translated || 'रमेश पाटील';
 }
 
 function translateFather(val) {
-  document.getElementById('father_en').innerText = val || 'Example Name';
-  const autoMr = autoTranslate(val);
+  document.getElementById('father_en').innerText = val || 'Suresh Patil';
   const mrInput = document.getElementById('fatherMrInput');
-  if (!mrInput.value || mrInput.dataset.autoGenerated === 'true') {
-    mrInput.value = autoMr;
-    mrInput.dataset.autoGenerated = 'true';
-    document.getElementById('father_mr').innerText = autoMr || 'उदा. सुरेश पाटील';
-  }
+  const translated = autoTranslate(val);
+  mrInput.value = translated;
+  document.getElementById('father_mr').innerText = translated || 'सुरेश पाटील';
 }
 
 function getVerificationUrl(cardId) {
@@ -256,9 +477,13 @@ function setID(val) {
   const cardId = val || 'KC-1001';
   document.getElementById('fid').innerText = cardId;
   const qrEl = document.getElementById('qr');
+  const qrLink = document.getElementById('qrLink');
+  const verifyUrl = getVerificationUrl(cardId);
   if (qrEl) {
-    const verifyUrl = getVerificationUrl(cardId);
     qrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(verifyUrl)}`;
+  }
+  if (qrLink) {
+    qrLink.href = verifyUrl;
   }
 }
 
@@ -268,15 +493,19 @@ function clearError(inputEl) {
   if (errBox) errBox.innerHTML = '';
 }
 
-// Photo Handlers
+// ==========================================================================
+// PHOTO UPLOAD & CAMERA CAPTURE HANDLERS
+// ==========================================================================
 function loadPhoto(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = function () {
     const photoEl = document.getElementById('photo');
+    const thumbEl = document.getElementById('formPhotoThumb');
     photoEl.src = reader.result;
     photoEl.dataset.custom = 'true';
+    if (thumbEl) thumbEl.src = reader.result;
     document.getElementById('photoName').innerText = file.name;
   };
   reader.readAsDataURL(file);
@@ -284,13 +513,14 @@ function loadPhoto(event) {
 
 function resetPhoto() {
   const photoEl = document.getElementById('photo');
+  const thumbEl = document.getElementById('formPhotoThumb');
   photoEl.src = defaultPhotoSrc;
   delete photoEl.dataset.custom;
+  if (thumbEl) thumbEl.src = defaultPhotoSrc;
   document.getElementById('photoName').innerText = 'Default image selected';
   document.getElementById('photoInput').value = '';
 }
 
-// Camera Handlers
 async function openCameraModal() {
   const modal = document.getElementById('cameraModal');
   const video = document.getElementById('cameraStream');
@@ -325,607 +555,336 @@ function captureCameraPhoto() {
 
   const dataUrl = canvas.toDataURL('image/png');
   const photoEl = document.getElementById('photo');
+  const thumbEl = document.getElementById('formPhotoThumb');
   photoEl.src = dataUrl;
   photoEl.dataset.custom = 'true';
-  document.getElementById('photoName').innerText = 'Camera capture snapshot';
+  if (thumbEl) thumbEl.src = dataUrl;
+  document.getElementById('photoName').innerText = 'Camera snapshot capture';
 
   closeCameraModal();
 }
 
-// Tab Switching
+// ==========================================================================
+// VIEW ROUTING
+// ==========================================================================
 function switchView(viewName) {
-  activeView = viewName;
-  document.querySelectorAll('.nav-tab').forEach((tab) => tab.classList.remove('active'));
-  document.querySelectorAll('.view-section').forEach((sec) => sec.classList.remove('active'));
+  document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
 
   if (viewName === 'dashboard') {
-    document.getElementById('tabDashboard').classList.add('active');
     document.getElementById('viewDashboard').classList.add('active');
+    document.getElementById('tabDashboard').classList.add('active');
     loadDashboardStats();
   } else if (viewName === 'studio') {
-    document.getElementById('tabStudio').classList.add('active');
     document.getElementById('viewStudio').classList.add('active');
+    document.getElementById('tabStudio').classList.add('active');
   } else if (viewName === 'registry') {
-    document.getElementById('tabRegistry').classList.add('active');
     document.getElementById('viewRegistry').classList.add('active');
+    document.getElementById('tabRegistry').classList.add('active');
     fetchFilteredFarmers();
   }
 }
 
-// API Integration & Dashboard Loader
+// ==========================================================================
+// DASHBOARD ANALYTICS & METRICS
+// ==========================================================================
 async function loadDashboardStats() {
   try {
-    const res = await fetch('/api/stats');
-    if (!res.ok) throw new Error('Failed to fetch stats');
+    const res = await fetch(`${API_BASE}/stats`);
+    if (!res.ok) throw new Error('Failed to load stats');
     const data = await res.json();
-    renderDashboard(data.stats);
+    renderDashboard(data);
   } catch (err) {
-    console.error('Error loading stats:', err);
+    console.error('Error loading dashboard stats:', err);
   }
 }
 
 function renderDashboard(stats) {
-  if (!stats) return;
-
-  // KPI Cards
   document.getElementById('statTotalFarmers').innerText = stats.totalFarmers || 0;
   document.getElementById('statActiveFarmers').innerText = stats.activeFarmers || 0;
   document.getElementById('statInactiveFarmers').innerText = stats.inactiveFarmers || 0;
   document.getElementById('statTotalVillages').innerText = stats.totalVillages || 0;
-  document.getElementById('statTotalArea').innerText = (stats.totalAreaHectare || 0).toFixed(2);
-  document.getElementById('statAvgArea').innerText = (stats.avgAreaHectare || 0).toFixed(2);
-  document.getElementById('bannerTotalLand').innerText = `${(stats.totalAreaHectare || 0).toFixed(2)} Hectares`;
-  document.getElementById('bannerAvgLand').innerText = `${(stats.avgAreaHectare || 0).toFixed(2)} Ha / Farmer`;
+  document.getElementById('statTotalLandArea').innerText = Number(stats.totalLandArea || 0).toFixed(2);
+  document.getElementById('statAvgLandArea').innerText = Number(stats.avgLandArea || 0).toFixed(2);
 
-  const verificationRate = stats.totalFarmers > 0
-    ? Math.round((stats.activeFarmers / stats.totalFarmers) * 100)
-    : 100;
-  document.getElementById('statVerificationRate').innerText = `${verificationRate}%`;
+  const navCount = document.getElementById('navFarmerCount');
+  if (navCount) navCount.innerText = stats.totalFarmers || 0;
 
-  // Update Nav Badge
-  const navBadge = document.getElementById('navFarmerCount');
-  if (navBadge) navBadge.innerText = stats.totalFarmers || 0;
+  const villageBadge = document.getElementById('dashVillageCountBadge');
+  if (villageBadge) villageBadge.innerText = `${stats.totalVillages || 0} Villages`;
 
-  // Village Wise Breakdown
-  const villageListEl = document.getElementById('villageStatsList');
-  const vTotalBadge = document.getElementById('villageBreakdownTotal');
-  if (vTotalBadge) vTotalBadge.innerText = `${stats.totalVillages || 0} Villages`;
-
-  if (stats.villageWise && stats.villageWise.length > 0) {
-    villageListEl.innerHTML = stats.villageWise.map((v) => `
-      <div class="village-bar-item">
-        <div class="vbar-info">
-          <div class="vbar-name-wrap">
-            <span class="vbar-name">🏡 ${escapeHtml(v.village)}</span>
-            <span class="vbar-area-tag">${v.totalArea} Ha</span>
+  const villageContainer = document.getElementById('villageStatsContainer');
+  if (stats.villageCounts && stats.villageCounts.length > 0) {
+    const maxCount = Math.max(...stats.villageCounts.map(v => v.count), 1);
+    villageContainer.innerHTML = stats.villageCounts.map(v => {
+      const pct = Math.round((v.count / maxCount) * 100);
+      return `
+        <div class="village-stat-item">
+          <span style="font-weight: 700; width: 110px;">${escapeHtml(v.village)}</span>
+          <div class="v-bar-wrap">
+            <div class="v-bar-fill" style="width: ${pct}%"></div>
           </div>
-          <div class="vbar-count-wrap">
-            <strong>${v.count}</strong>
-            <span class="text-muted">(${v.percentage}%)</span>
-          </div>
+          <span style="font-weight: 700; color: #15803d;">${v.count} farmers</span>
         </div>
-        <div class="vbar-track">
-          <div class="vbar-fill" style="width: ${Math.max(5, v.percentage)}%"></div>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   } else {
-    villageListEl.innerHTML = '<div class="empty-state-sm">No village records found. Register farmers to see analytics.</div>';
+    villageContainer.innerHTML = `<div class="text-muted" style="padding: 1rem; text-align: center;">No village records registered yet.</div>`;
   }
 
-  // Land Distribution
-  const dist = stats.landDistribution || { marginal: 0, small: 0, semiMedium: 0, large: 0 };
-  const distTotal = (dist.marginal + dist.small + dist.semiMedium + dist.large) || 1;
-
-  document.getElementById('countMarginal').innerText = `${dist.marginal} farmers (${Math.round((dist.marginal / distTotal) * 100)}%)`;
-  document.getElementById('countSmall').innerText = `${dist.small} farmers (${Math.round((dist.small / distTotal) * 100)}%)`;
-  document.getElementById('countSemiMedium').innerText = `${dist.semiMedium} farmers (${Math.round((dist.semiMedium / distTotal) * 100)}%)`;
-  document.getElementById('countLarge').innerText = `${dist.large} farmers (${Math.round((dist.large / distTotal) * 100)}%)`;
-
-  document.getElementById('barMarginal').style.width = `${Math.round((dist.marginal / distTotal) * 100)}%`;
-  document.getElementById('barSmall').style.width = `${Math.round((dist.small / distTotal) * 100)}%`;
-  document.getElementById('barSemiMedium').style.width = `${Math.round((dist.semiMedium / distTotal) * 100)}%`;
-  document.getElementById('barLarge').style.width = `${Math.round((dist.large / distTotal) * 100)}%`;
-
-  // Recent Registrations Table
-  renderRecentRegistrations(stats.recentFarmers || []);
+  renderRecentRegistrations(stats.recentRegistrations || []);
 }
 
-function renderRecentRegistrations(recentList) {
-  const tbody = document.getElementById('recentFarmersTableBody');
-  if (!tbody) return;
-
-  if (!recentList || recentList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No recent registrations.</td></tr>';
+function renderRecentRegistrations(recents) {
+  const container = document.getElementById('recentRegistrationsContainer');
+  if (!recents || recents.length === 0) {
+    container.innerHTML = `<div class="text-muted" style="padding: 1rem; text-align: center;">No recent registrations found.</div>`;
     return;
   }
-
-  tbody.innerHTML = recentList.map((f) => `
-    <tr>
-      <td><span class="card-id-pill">${escapeHtml(f.cardNumber)}</span></td>
-      <td>
-        <div class="farmer-cell">
-          <img src="${f.photo || defaultPhotoSrc}" class="avatar-sm" onerror="this.src='${defaultPhotoSrc}'" />
-          <div>
-            <strong>${escapeHtml(f.farmerName)}</strong>
-            <div class="text-xs text-muted">${escapeHtml(f.farmerNameMr || '')}</div>
-          </div>
-        </div>
-      </td>
-      <td>${escapeHtml(f.fatherName || '-')}</td>
-      <td>${escapeHtml(f.village || '-')}</td>
-      <td>${escapeHtml(f.survey || '-')}${f.subSurvey ? '/' + escapeHtml(f.subSurvey) : ''}</td>
-      <td><span class="area-badge">${f.area ? f.area + ' Ha' : '-'}</span></td>
-      <td>
-        <span class="status-pill status-${f.status === 'inactive' ? 'inactive' : 'active'}">
-          ${f.status === 'inactive' ? '⏳ Pending' : '✅ Active'}
-        </span>
-      </td>
-      <td>
-        <div class="action-btn-group">
-          <button class="btn-action-icon" title="Load & View Card" onclick="handleProtectedRecordView('${f.cardNumber}')">🪪 View</button>
-          <a href="/verify.html?id=${encodeURIComponent(f.cardNumber)}" target="_blank" class="btn-action-icon" title="Verify Online">🔍 Verify</a>
-        </div>
-      </td>
-    </tr>
+  container.innerHTML = recents.map(f => `
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px dashed #e2e8f0;">
+      <div>
+        <div style="font-weight: 700;">${escapeHtml(f.farmerName || 'Farmer')}</div>
+        <div style="font-size: 0.75rem; color: #64748b;">${escapeHtml(f.village || '-')} • ${f.cardNumber}</div>
+      </div>
+      <button class="btn btn-sm btn-outline" onclick="handleProtectedRecordView('${f.id}')">View</button>
+    </div>
   `).join('');
 }
 
-function handleProtectedRecordView(cardId) {
-  if (!authState.isAuthenticated) {
-    openLoginModal('studio');
-    return;
+async function handleProtectedRecordView(id) {
+  const authed = await checkAuthStatus();
+  if (authed) {
+    loadFarmerIntoStudio(id);
+  } else {
+    openLoginModal(() => loadFarmerIntoStudio(id));
   }
-  loadFarmerIntoStudioByCard(cardId);
 }
 
-// ----------------------------------------------------
-// ADVANCED SEARCH, FILTER, SORT & PAGINATION
-// ----------------------------------------------------
-
+// ==========================================================================
+// FARMERS REGISTRY (SEARCH, FILTER, SORT, PAGINATE)
+// ==========================================================================
 async function fetchFilteredFarmers() {
-  if (!authState.isAuthenticated) {
-    openLoginModal('registry');
-    return;
-  }
+  const params = new URLSearchParams({
+    search: registryState.search,
+    village: registryState.village,
+    status: registryState.status,
+    sortBy: registryState.sortBy,
+    page: registryState.page,
+    limit: registryState.limit
+  });
 
   try {
-    const params = new URLSearchParams({
-      search: filterState.search,
-      village: filterState.village,
-      status: filterState.status,
-      sortBy: filterState.sortBy,
-      sortOrder: filterState.sortOrder,
-      page: filterState.page,
-      limit: filterState.limit
-    });
-
-    const res = await fetch(`/api/farmers?${params.toString()}`, {
-      headers: getAuthHeaders()
-    });
-
-    if (res.status === 401) {
-      logoutAdmin(false);
-      openLoginModal('registry');
-      return;
-    }
-
-    if (!res.ok) throw new Error('Failed to load farmers');
+    const res = await fetch(`${API_BASE}?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch records');
     const data = await res.json();
 
-    savedFarmers = data.farmers || [];
-    filterState.totalRecords = data.total || 0;
-    filterState.totalPages = data.totalPages || 1;
-    filterState.page = data.page || 1;
-    if (data.villages) {
-      filterState.availableVillages = data.villages;
-      updateVillageFilterDropdown(data.villages);
-    }
+    registryState.total = data.total || 0;
+    registryState.totalPages = data.totalPages || 1;
+    registryState.page = data.page || 1;
 
-    renderRegistry();
     renderActiveFilterChips();
+    renderRegistry(data.farmers || []);
     renderPagination();
+
+    const countEl = document.getElementById('farmerCount');
+    if (countEl) countEl.innerText = `${data.total} registered farmers in directory`;
+    const navCount = document.getElementById('navFarmerCount');
+    if (navCount) navCount.innerText = data.total;
+
+    updateVillageFilterDropdown(data.villages || []);
   } catch (err) {
-    console.error('Error fetching farmers:', err);
+    console.error('Error fetching registry:', err);
   }
 }
 
 function handleSearchInput(val) {
-  clearTimeout(searchDebounceTimer);
-  const clearBtn = document.getElementById('searchClearBtn');
-  if (clearBtn) clearBtn.style.display = val ? 'block' : 'none';
+  registryState.search = val.trim();
+  registryState.page = 1;
+  const clearBtn = document.getElementById('clearSearchBtn');
+  if (clearBtn) clearBtn.style.display = registryState.search ? 'block' : 'none';
 
+  clearTimeout(searchDebounceTimer);
   searchDebounceTimer = setTimeout(() => {
-    filterState.search = val.trim();
-    filterState.page = 1;
     fetchFilteredFarmers();
   }, 300);
 }
 
 function clearSearchInput() {
-  const searchInput = document.getElementById('farmerSearch');
-  if (searchInput) searchInput.value = '';
-  const clearBtn = document.getElementById('searchClearBtn');
-  if (clearBtn) clearBtn.style.display = 'none';
+  const input = document.getElementById('registrySearchInput');
+  if (input) input.value = '';
+  handleSearchInput('');
+}
 
-  filterState.search = '';
-  filterState.page = 1;
+function handleVillageFilter(val) {
+  registryState.village = val;
+  registryState.page = 1;
   fetchFilteredFarmers();
 }
 
-function handleVillageFilter(villageVal) {
-  filterState.village = villageVal;
-  filterState.page = 1;
+function handleStatusFilter(val) {
+  registryState.status = val;
+  registryState.page = 1;
   fetchFilteredFarmers();
 }
 
-function handleStatusFilter(statusVal) {
-  filterState.status = statusVal;
-  filterState.page = 1;
+function handleSortChange(val) {
+  registryState.sortBy = val;
+  registryState.page = 1;
   fetchFilteredFarmers();
 }
 
-function handleSortChange(sortVal) {
-  const [sortBy, sortOrder] = sortVal.split('_');
-  filterState.sortBy = sortBy;
-  filterState.sortOrder = sortOrder || 'desc';
-  filterState.page = 1;
-  fetchFilteredFarmers();
-}
-
-function toggleTableSort(field) {
-  if (filterState.sortBy === field) {
-    filterState.sortOrder = filterState.sortOrder === 'asc' ? 'desc' : 'asc';
-  } else {
-    filterState.sortBy = field;
-    filterState.sortOrder = 'asc';
+function toggleTableSort(column) {
+  const current = registryState.sortBy;
+  if (column === 'farmerName') {
+    registryState.sortBy = current === 'name_asc' ? 'name_desc' : 'name_asc';
+  } else if (column === 'cardNumber') {
+    registryState.sortBy = current === 'card_asc' ? 'date_desc' : 'card_asc';
+  } else if (column === 'village') {
+    registryState.sortBy = current === 'name_asc' ? 'name_desc' : 'name_asc';
+  } else if (column === 'area') {
+    registryState.sortBy = current === 'area_desc' ? 'date_desc' : 'area_desc';
   }
-  const sortSelector = document.getElementById('sortSelector');
-  if (sortSelector) {
-    const targetVal = `${filterState.sortBy}_${filterState.sortOrder}`;
-    for (let opt of sortSelector.options) {
-      if (opt.value === targetVal) {
-        sortSelector.value = targetVal;
-        break;
-      }
-    }
-  }
+  document.getElementById('sortBySelect').value = registryState.sortBy;
   fetchFilteredFarmers();
 }
 
-function handlePageSizeChange(limitVal) {
-  filterState.limit = parseInt(limitVal, 10) || 10;
-  filterState.page = 1;
+function setPage(p) {
+  if (p < 1 || p > registryState.totalPages) return;
+  registryState.page = p;
   fetchFilteredFarmers();
-}
-
-function setPage(pageNum) {
-  if (pageNum < 1 || pageNum > filterState.totalPages) return;
-  filterState.page = pageNum;
-  fetchFilteredFarmers();
-}
-
-function setRegistryViewMode(mode) {
-  filterState.viewMode = mode;
-  const gridBtn = document.getElementById('viewModeGridBtn');
-  const tableBtn = document.getElementById('viewModeTableBtn');
-  const gridContainer = document.getElementById('farmerList');
-  const tableWrapper = document.getElementById('farmerTableWrapper');
-
-  if (mode === 'table') {
-    gridBtn.classList.remove('active');
-    tableBtn.classList.add('active');
-    gridContainer.style.display = 'none';
-    tableWrapper.style.display = 'block';
-  } else {
-    tableBtn.classList.remove('active');
-    gridBtn.classList.add('active');
-    tableWrapper.style.display = 'none';
-    gridContainer.style.display = 'grid';
-  }
 }
 
 function updateVillageFilterDropdown(villages) {
-  const select = document.getElementById('filterVillage');
+  const select = document.getElementById('villageFilterSelect');
   if (!select) return;
-
-  const currentSelection = filterState.village;
-  const options = ['<option value="all">🏘️ All Villages</option>'];
-
-  villages.forEach((v) => {
-    const isSelected = v.toLowerCase() === currentSelection.toLowerCase() ? 'selected' : '';
+  const currentVal = registryState.village;
+  const options = ['<option value="">All Villages</option>'];
+  villages.forEach(v => {
+    const isSelected = v === currentVal ? 'selected' : '';
     options.push(`<option value="${escapeHtml(v)}" ${isSelected}>${escapeHtml(v)}</option>`);
   });
-
   select.innerHTML = options.join('');
 }
 
 function renderActiveFilterChips() {
   const container = document.getElementById('activeFilterChips');
   if (!container) return;
-
   const chips = [];
 
-  if (filterState.search) {
-    chips.push(`
-      <span class="filter-chip">
-        Search: "${escapeHtml(filterState.search)}"
-        <button onclick="clearSearchInput()" title="Remove search">✕</button>
-      </span>
-    `);
+  if (registryState.search) {
+    chips.push(`<span class="filter-chip">Search: "${escapeHtml(registryState.search)}" <button onclick="clearSearchInput()">×</button></span>`);
   }
-
-  if (filterState.village && filterState.village !== 'all') {
-    chips.push(`
-      <span class="filter-chip">
-        Village: ${escapeHtml(filterState.village)}
-        <button onclick="handleVillageFilter('all')" title="Clear village filter">✕</button>
-      </span>
-    `);
+  if (registryState.village) {
+    chips.push(`<span class="filter-chip">Village: ${escapeHtml(registryState.village)} <button onclick="handleVillageFilter('')">×</button></span>`);
   }
-
-  if (filterState.status && filterState.status !== 'all') {
-    chips.push(`
-      <span class="filter-chip">
-        Status: ${filterState.status}
-        <button onclick="handleStatusFilter('all')" title="Clear status filter">✕</button>
-      </span>
-    `);
+  if (registryState.status) {
+    chips.push(`<span class="filter-chip">Status: ${registryState.status} <button onclick="handleStatusFilter('')">×</button></span>`);
   }
 
   if (chips.length > 0) {
-    chips.push(`
-      <button class="btn-clear-all-chips" onclick="resetAllFilters()">
-        Reset All Filters
-      </button>
-    `);
-    container.innerHTML = chips.join('');
     container.style.display = 'flex';
+    container.innerHTML = chips.join('') + `<button class="btn btn-sm btn-outline" style="font-size: 0.7rem; padding: 2px 6px;" onclick="resetAllFilters()">Reset All</button>`;
   } else {
-    container.innerHTML = '';
     container.style.display = 'none';
+    container.innerHTML = '';
   }
 }
 
 function resetAllFilters() {
-  filterState.search = '';
-  filterState.village = 'all';
-  filterState.status = 'all';
-  filterState.sortBy = 'createdAt';
-  filterState.sortOrder = 'desc';
-  filterState.page = 1;
+  registryState.search = '';
+  registryState.village = '';
+  registryState.status = '';
+  registryState.sortBy = 'date_desc';
+  registryState.page = 1;
 
-  document.getElementById('farmerSearch').value = '';
-  document.getElementById('filterVillage').value = 'all';
-  document.getElementById('filterStatus').value = 'all';
-  document.getElementById('sortSelector').value = 'createdAt_desc';
-  document.getElementById('searchClearBtn').style.display = 'none';
+  document.getElementById('registrySearchInput').value = '';
+  document.getElementById('clearSearchBtn').style.display = 'none';
+  document.getElementById('villageFilterSelect').value = '';
+  document.getElementById('statusFilterSelect').value = '';
+  document.getElementById('sortBySelect').value = 'date_desc';
 
   fetchFilteredFarmers();
 }
 
-function renderRegistry() {
-  const countEl = document.getElementById('farmerCount');
-  const navBadge = document.getElementById('navFarmerCount');
-
-  const total = filterState.totalRecords;
-  if (countEl) countEl.innerText = `${total} registered farmer${total === 1 ? '' : 's'}`;
-  if (navBadge) navBadge.innerText = total;
-
-  if (filterState.viewMode === 'table') {
-    renderRegistryTable();
-  } else {
-    renderRegistryGrid();
-  }
-}
-
-function renderRegistryGrid() {
-  const container = document.getElementById('farmerList');
-  if (!container) return;
-
-  if (!savedFarmers || savedFarmers.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state-card">
-        <span class="empty-icon">🔍</span>
-        <h4>No matching farmers found</h4>
-        <p>Try adjusting your search keywords, clearing village or status filters.</p>
-        <button class="btn btn-sm btn-outline mt-2" onclick="resetAllFilters()">Reset Filters</button>
-      </div>
-    `;
+function renderRegistry(farmers) {
+  const tbody = document.getElementById('farmerList');
+  if (!farmers || farmers.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2.5rem;" class="text-muted">No farmers match the selected filters.</td></tr>`;
     return;
   }
 
-  container.innerHTML = savedFarmers.map((f) => `
-    <div class="saved-item-card">
-      <div class="saved-card-top">
-        <div class="farmer-avatar-wrap">
-          <img src="${f.photo || defaultPhotoSrc}" class="saved-avatar" onerror="this.src='${defaultPhotoSrc}'" />
-          <span class="status-indicator-dot ${f.status === 'inactive' ? 'dot-inactive' : 'dot-active'}" title="${f.status}"></span>
-        </div>
-        <div class="saved-title-info">
-          <div class="saved-card-badge">${escapeHtml(f.cardNumber)}</div>
-          <h4 class="farmer-title">${escapeHtml(f.farmerName)}</h4>
-          <div class="farmer-title-mr">${escapeHtml(f.farmerNameMr || '')}</div>
-        </div>
-      </div>
-
-      <div class="saved-card-details">
-        <div class="detail-row">
-          <span class="d-label">Father:</span>
-          <span class="d-val">${escapeHtml(f.fatherName || '-')}</span>
-        </div>
-        <div class="detail-row">
-          <span class="d-label">Village:</span>
-          <span class="d-val font-semibold">${escapeHtml(f.village || '-')}</span>
-        </div>
-        <div class="detail-row">
-          <span class="d-label">Survey:</span>
-          <span class="d-val">${escapeHtml(f.survey || '-')}${f.subSurvey ? '/' + escapeHtml(f.subSurvey) : ''}</span>
-        </div>
-        <div class="detail-row">
-          <span class="d-label">Land Area:</span>
-          <span class="d-val text-green font-semibold">${f.area ? f.area + ' Hectare' : '-'}</span>
-        </div>
-        <div class="detail-row">
-          <span class="d-label">Aadhaar:</span>
-          <span class="d-val">${f.aadhaar ? maskAadhaar(f.aadhaar) : '-'}</span>
-        </div>
-      </div>
-
-      <div class="saved-card-actions">
-        <button class="btn-card-action btn-primary-soft" onclick="loadFarmerIntoStudio('${f.id}')" title="Load into Studio">
-          🪪 Card
-        </button>
-        <a href="/verify.html?id=${encodeURIComponent(f.cardNumber)}" target="_blank" class="btn-card-action btn-verify-soft" title="Verify Online Portal">
-          🔍 Verify
-        </a>
-        <button class="btn-card-action btn-danger-soft" onclick="deleteFarmerRecord('${f.id}')" title="Delete Farmer">
-          🗑️
-        </button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function renderRegistryTable() {
-  const tbody = document.getElementById('farmerTableBody');
-  if (!tbody) return;
-
-  if (!savedFarmers || savedFarmers.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5 text-muted">No records match your search criteria.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = savedFarmers.map((f) => `
-    <tr>
-      <td><span class="card-id-pill">${escapeHtml(f.cardNumber)}</span></td>
-      <td>
-        <div class="farmer-cell">
-          <img src="${f.photo || defaultPhotoSrc}" class="avatar-sm" onerror="this.src='${defaultPhotoSrc}'" />
-          <div>
-            <strong>${escapeHtml(f.farmerName)}</strong>
-            <div class="text-xs text-muted">${escapeHtml(f.farmerNameMr || '')}</div>
+  tbody.innerHTML = farmers.map(f => {
+    const statusPill = f.status === 'inactive'
+      ? `<span class="status-pill status-inactive">Pending</span>`
+      : `<span class="status-pill status-active">Active</span>`;
+    return `
+      <tr>
+        <td><span class="card-id-pill">${escapeHtml(f.cardNumber || 'KC-0000')}</span></td>
+        <td>
+          <div style="font-weight: 700; color: #0f172a;">${escapeHtml(f.farmerName || '-')}</div>
+          ${f.farmerNameMr ? `<div style="font-size: 0.75rem; color: #166534; font-family: var(--font-mr);">${escapeHtml(f.farmerNameMr)}</div>` : ''}
+        </td>
+        <td>${escapeHtml(f.village || '-')}</td>
+        <td>${escapeHtml(f.survey || '-')}${f.subSurvey ? ' / ' + escapeHtml(f.subSurvey) : ''}</td>
+        <td><strong style="color: #15803d;">${f.area ? Number(f.area).toFixed(2) : '-'}</strong></td>
+        <td>${statusPill}</td>
+        <td style="text-align: right;">
+          <div class="actions-cell" style="justify-content: flex-end;">
+            <button class="btn btn-sm btn-outline" onclick="loadFarmerIntoStudio('${f.id}')" title="Edit Farmer">✏️</button>
+            <a href="/verify.html?id=${encodeURIComponent(f.cardNumber)}" target="_blank" class="btn btn-sm btn-outline" title="Verify Online">🔍</a>
+            <button class="btn btn-sm btn-danger-soft" onclick="deleteFarmerRecord('${f.id}')" title="Delete Farmer">🗑️</button>
           </div>
-        </div>
-      </td>
-      <td>${escapeHtml(f.fatherName || '-')}</td>
-      <td><strong>${escapeHtml(f.village || '-')}</strong></td>
-      <td>${escapeHtml(f.survey || '-')}${f.subSurvey ? '/' + escapeHtml(f.subSurvey) : ''}</td>
-      <td><span class="area-badge">${f.area ? f.area + ' Ha' : '-'}</span></td>
-      <td class="font-mono text-sm">${f.aadhaar ? maskAadhaar(f.aadhaar) : '-'}</td>
-      <td>
-        <span class="status-pill status-${f.status === 'inactive' ? 'inactive' : 'active'}">
-          ${f.status === 'inactive' ? '⏳ Pending' : '✅ Active'}
-        </span>
-      </td>
-      <td>
-        <div class="action-btn-group">
-          <button class="btn-action-icon" title="View Card" onclick="loadFarmerIntoStudio('${f.id}')">🪪</button>
-          <a href="/verify.html?id=${encodeURIComponent(f.cardNumber)}" target="_blank" class="btn-action-icon" title="Verify Online">🔍</a>
-          <button class="btn-action-icon btn-del" title="Delete" onclick="deleteFarmerRecord('${f.id}')">🗑️</button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function renderPagination() {
-  const infoEl = document.getElementById('paginationInfo');
-  const controlsEl = document.getElementById('paginationControls');
-  if (!infoEl || !controlsEl) return;
+  const container = document.getElementById('paginationControls');
+  const info = document.getElementById('paginationInfo');
+  if (!container || !info) return;
 
-  const total = filterState.totalRecords;
-  const page = filterState.page;
-  const limit = filterState.limit;
-  const totalPages = filterState.totalPages;
+  const start = (registryState.page - 1) * registryState.limit + 1;
+  const end = Math.min(registryState.page * registryState.limit, registryState.total);
+  info.innerText = registryState.total > 0
+    ? `Showing ${start}-${end} of ${registryState.total} records`
+    : 'Showing 0 records';
 
-  if (total === 0) {
-    infoEl.innerText = 'Showing 0 to 0 of 0 records';
-    controlsEl.innerHTML = '';
+  if (registryState.totalPages <= 1) {
+    container.innerHTML = '';
     return;
   }
 
-  const start = (page - 1) * limit + 1;
-  const end = Math.min(page * limit, total);
-  infoEl.innerText = `Showing ${start} to ${end} of ${total} records (Page ${page} of ${totalPages})`;
+  let btns = [];
+  btns.push(`<button class="page-btn" onclick="setPage(${registryState.page - 1})" ${registryState.page === 1 ? 'disabled' : ''}>← Prev</button>`);
 
-  const btns = [];
-
-  // Prev Button
-  btns.push(`
-    <button class="page-btn" ${page <= 1 ? 'disabled' : ''} onclick="setPage(${page - 1})">
-      « Prev
-    </button>
-  `);
-
-  // Numeric page buttons
-  const maxButtons = 5;
-  let startPage = Math.max(1, page - Math.floor(maxButtons / 2));
-  let endPage = Math.min(totalPages, startPage + maxButtons - 1);
-
-  if (endPage - startPage + 1 < maxButtons) {
-    startPage = Math.max(1, endPage - maxButtons + 1);
+  for (let i = 1; i <= registryState.totalPages; i++) {
+    if (i === 1 || i === registryState.totalPages || Math.abs(i - registryState.page) <= 1) {
+      btns.push(`<button class="page-btn ${i === registryState.page ? 'active' : ''}" onclick="setPage(${i})">${i}</button>`);
+    } else if (Math.abs(i - registryState.page) === 2) {
+      btns.push(`<span style="padding: 0 4px; color: #94a3b8;">...</span>`);
+    }
   }
 
-  if (startPage > 1) {
-    btns.push(`<button class="page-btn" onclick="setPage(1)">1</button>`);
-    if (startPage > 2) btns.push(`<span class="page-ellipsis">...</span>`);
-  }
-
-  for (let p = startPage; p <= endPage; p++) {
-    btns.push(`
-      <button class="page-btn ${p === page ? 'active' : ''}" onclick="setPage(${p})">
-        ${p}
-      </button>
-    `);
-  }
-
-  if (endPage < totalPages) {
-    if (endPage < totalPages - 1) btns.push(`<span class="page-ellipsis">...</span>`);
-    btns.push(`<button class="page-btn" onclick="setPage(${totalPages})">${totalPages}</button>`);
-  }
-
-  // Next Button
-  btns.push(`
-    <button class="page-btn" ${page >= totalPages ? 'disabled' : ''} onclick="setPage(${page + 1})">
-      Next »
-    </button>
-  `);
-
-  controlsEl.innerHTML = btns.join('');
+  btns.push(`<button class="page-btn" onclick="setPage(${registryState.page + 1})" ${registryState.page === registryState.totalPages ? 'disabled' : ''}>Next →</button>`);
+  container.innerHTML = btns.join('');
 }
 
-// ----------------------------------------------------
-// FORM ACTIONS & CARD OPERATIONS
-// ----------------------------------------------------
-
-function loadFarmerIntoStudio(farmerId) {
-  if (!authState.isAuthenticated) {
-    openLoginModal('studio');
-    return;
+// ==========================================================================
+// FARMER CRUD IN STUDIO
+// ==========================================================================
+async function loadFarmerIntoStudio(id) {
+  try {
+    const res = await fetch(`${API_BASE}/${id}`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error('Failed to load farmer details');
+    const f = await res.json();
+    populateStudioWithFarmer(f);
+    switchView('studio');
+  } catch (err) {
+    alert('Error loading farmer: ' + err.message);
   }
-  const f = savedFarmers.find((entry) => String(entry.id) === String(farmerId));
-  if (!f) {
-    fetch(`/api/farmers/${farmerId}`, { headers: getAuthHeaders() })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.farmer) populateStudioWithFarmer(data.farmer);
-      });
-    return;
-  }
-  populateStudioWithFarmer(f);
-}
-
-function loadFarmerIntoStudioByCard(cardId) {
-  if (!authState.isAuthenticated) {
-    openLoginModal('studio');
-    return;
-  }
-  fetch(`/api/verify/${encodeURIComponent(cardId)}`)
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.farmer) populateStudioWithFarmer(data.farmer);
-    });
 }
 
 function populateStudioWithFarmer(f) {
@@ -935,132 +894,105 @@ function populateStudioWithFarmer(f) {
   document.getElementById('fatherInput').value = f.fatherName || '';
   document.getElementById('fatherMrInput').value = f.fatherNameMr || '';
   document.getElementById('addressInput').value = f.address || '';
+  document.getElementById('aadhaarInput').value = f.aadhaar ? formatAadhaar(f.aadhaar) : '';
   document.getElementById('villageInput').value = f.village || '';
   document.getElementById('surveyInput').value = f.survey || '';
   document.getElementById('subSurveyInput').value = f.subSurvey || '';
   document.getElementById('areaInput').value = f.area || '';
-  document.getElementById('aadhaarInput').value = f.aadhaar || '';
 
-  // Update Live Card
-  document.getElementById('fid').innerText = f.cardNumber || 'KC-1001';
-  document.getElementById('name_en').innerText = f.farmerName || 'Example Name';
-  document.getElementById('name_mr').innerText = f.farmerNameMr || 'उदा. रमेश पाटील';
-  document.getElementById('father_en').innerText = f.fatherName || 'Example Name';
-  document.getElementById('father_mr').innerText = f.fatherNameMr || 'उदा. सुरेश पाटील';
-  document.getElementById('address').innerText = f.address || 'ABC Street';
+  // Synchronize Live Card Display
+  setID(f.cardNumber);
+  document.getElementById('name_en').innerText = f.farmerName || 'Ramesh Patil';
+  document.getElementById('name_mr').innerText = f.farmerNameMr || 'रमेश पाटील';
+  document.getElementById('father_en').innerText = f.fatherName || 'Suresh Patil';
+  document.getElementById('father_mr').innerText = f.fatherNameMr || 'सुरेश पाटील';
+  document.getElementById('address').innerText = f.address || 'Main Road';
+  toggleAadhaarMask();
   document.getElementById('village').innerText = f.village || 'Takarkheda';
   document.getElementById('survey').innerText = f.survey || '213';
   document.getElementById('sub').innerText = f.subSurvey || '2';
   document.getElementById('area').innerText = f.area || '1.08';
 
   const photoEl = document.getElementById('photo');
+  const thumbEl = document.getElementById('formPhotoThumb');
   if (f.photo) {
     photoEl.src = f.photo;
     photoEl.dataset.custom = 'true';
-    document.getElementById('photoName').innerText = 'Loaded profile image';
+    if (thumbEl) thumbEl.src = f.photo;
+    document.getElementById('photoName').innerText = 'Custom farmer photo';
   } else {
     resetPhoto();
   }
 
-  setID(f.cardNumber || 'KC-1001');
-  toggleAadhaarMask();
-
-  switchView('studio');
+  document.getElementById('saveBtn').dataset.editingId = f.id;
+  document.getElementById('saveBtn').innerText = '💾 Update Farmer';
 }
 
 async function saveFarmer() {
-  if (!authState.isAuthenticated) {
-    openLoginModal('studio');
-    return;
-  }
-
-  const name = document.getElementById('nameInput').value.trim();
-  const father = document.getElementById('fatherInput').value.trim();
-  const address = document.getElementById('addressInput').value.trim();
-  const village = document.getElementById('villageInput').value.trim();
-
-  const errors = [];
-  if (!name) errors.push('Farmer Name is required.');
-  if (!father) errors.push("Father's Name is required.");
-  if (!address) errors.push('Address is required.');
-  if (!village) errors.push('Village is required.');
-
+  const saveBtn = document.getElementById('saveBtn');
   const errBox = document.getElementById('validationErrors');
-  if (errors.length > 0) {
-    errBox.innerHTML = errors.map((e) => `<p class="error-text">⚠️ ${e}</p>`).join('');
-    return;
-  }
   errBox.innerHTML = '';
 
-  const photoEl = document.getElementById('photo');
-  const photo = photoEl.dataset.custom === 'true' ? photoEl.src : '';
-
-  const payload = {
-    cardNumber: document.getElementById('cardInput').value.trim(),
-    farmerName: name,
+  const farmerData = {
+    cardNumber: document.getElementById('cardInput').value.trim() || undefined,
+    farmerName: document.getElementById('nameInput').value.trim(),
     farmerNameMr: document.getElementById('nameMrInput').value.trim(),
-    fatherName: father,
+    fatherName: document.getElementById('fatherInput').value.trim(),
     fatherNameMr: document.getElementById('fatherMrInput').value.trim(),
-    address,
-    village,
+    address: document.getElementById('addressInput').value.trim(),
+    aadhaar: document.getElementById('aadhaarInput').value.trim(),
+    village: document.getElementById('villageInput').value.trim(),
     survey: document.getElementById('surveyInput').value.trim(),
     subSurvey: document.getElementById('subSurveyInput').value.trim(),
     area: document.getElementById('areaInput').value.trim(),
-    aadhaar: document.getElementById('aadhaarInput').value.trim(),
-    status: 'active',
-    photo
+    status: 'active'
   };
 
+  const photoEl = document.getElementById('photo');
+  if (photoEl.dataset.custom === 'true') {
+    farmerData.photo = photoEl.src;
+  }
+
+  const editingId = saveBtn.dataset.editingId;
+  const method = editingId ? 'PUT' : 'POST';
+  const url = editingId ? `${API_BASE}/${editingId}` : API_BASE;
+
+  saveBtn.disabled = true;
+  saveBtn.innerText = 'Saving...';
+
   try {
-    const res = await fetch('/api/farmers', {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(payload)
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify(farmerData)
     });
 
-    if (res.status === 401) {
-      logoutAdmin(false);
-      openLoginModal('studio');
-      return;
-    }
-
+    const data = await res.json();
     if (!res.ok) {
-      const errData = await res.json();
-      throw new Error(errData.errors ? errData.errors.join(', ') : 'Failed to save');
+      throw new Error(data.error || 'Failed to save farmer');
     }
 
-    alert('✅ Farmer card saved successfully!');
-    loadDashboardStats();
-    if (activeView === 'registry') fetchFilteredFarmers();
+    alert(editingId ? 'Farmer details updated successfully!' : 'Farmer registered successfully!');
+    clearForm();
+    switchView('registry');
   } catch (err) {
-    alert('Error saving farmer: ' + err.message);
+    errBox.innerHTML = `⚠️ ${err.message}`;
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.innerText = editingId ? '💾 Update Farmer' : '💾 Save Farmer';
   }
 }
 
 async function deleteFarmerRecord(id) {
-  if (!authState.isAuthenticated) {
-    openLoginModal('registry');
-    return;
-  }
-
-  if (!confirm('Are you sure you want to delete this farmer registration?')) return;
-
+  if (!confirm('Are you sure you want to permanently delete this farmer record?')) return;
   try {
-    const res = await fetch(`/api/farmers/${id}`, {
+    const res = await fetch(`${API_BASE}/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
-
-    if (res.status === 401) {
-      logoutAdmin(false);
-      openLoginModal('registry');
-      return;
-    }
-
-    if (!res.ok) throw new Error('Failed to delete');
-
-    loadDashboardStats();
+    if (!res.ok) throw new Error('Failed to delete farmer');
     fetchFilteredFarmers();
+    loadDashboardStats();
   } catch (err) {
     alert('Error deleting record: ' + err.message);
   }
@@ -1073,46 +1005,98 @@ function clearForm() {
   document.getElementById('fatherInput').value = '';
   document.getElementById('fatherMrInput').value = '';
   document.getElementById('addressInput').value = '';
+  document.getElementById('aadhaarInput').value = '';
   document.getElementById('villageInput').value = '';
   document.getElementById('surveyInput').value = '';
   document.getElementById('subSurveyInput').value = '';
   document.getElementById('areaInput').value = '';
-  document.getElementById('aadhaarInput').value = '';
+  document.getElementById('validationErrors').innerHTML = '';
 
-  document.getElementById('name_en').innerText = 'Example Name';
-  document.getElementById('name_mr').innerText = 'उदा. रमेश पाटील';
-  document.getElementById('father_en').innerText = 'Example Name';
-  document.getElementById('father_mr').innerText = 'उदा. सुरेश पाटील';
-  document.getElementById('address').innerText = 'ABC Street';
+  setID('KC-1001');
+  document.getElementById('name_en').innerText = 'Ramesh Patil';
+  document.getElementById('name_mr').innerText = 'रमेश पाटील';
+  document.getElementById('father_en').innerText = 'Suresh Patil';
+  document.getElementById('father_mr').innerText = 'सुरेश पाटील';
+  document.getElementById('address').innerText = 'Main Road';
+  document.getElementById('aadhaar').innerText = 'XXXX XXXX XXXX';
   document.getElementById('village').innerText = 'Takarkheda';
   document.getElementById('survey').innerText = '213';
   document.getElementById('sub').innerText = '2';
   document.getElementById('area').innerText = '1.08';
-  document.getElementById('fid').innerText = 'KC-1001';
 
   resetPhoto();
-  setID('KC-1001');
-  toggleAadhaarMask();
-  const errBox = document.getElementById('validationErrors');
-  if (errBox) errBox.innerHTML = '';
+
+  const saveBtn = document.getElementById('saveBtn');
+  delete saveBtn.dataset.editingId;
+  saveBtn.innerText = '💾 Save Farmer';
 }
 
-function exportCSV() {
-  if (!authState.isAuthenticated) {
-    openLoginModal('registry');
+// ==========================================================================
+// EXPORT & PRINT HANDLERS
+// ==========================================================================
+async function exportCSV() {
+  try {
+    const res = await fetch(`${API_BASE}/export/csv`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error('Failed to export CSV');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kisan_farmers_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    alert('Export CSV failed: ' + err.message);
+  }
+}
+
+async function exportBackup() {
+  try {
+    const res = await fetch('/api/backup/export', { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error('Failed to create backup');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kisan_card_db_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    alert('Backup export failed: ' + err.message);
+  }
+}
+
+async function handleRestoreFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!confirm('Warning: Restoring will overwrite current database records with backup data. Proceed?')) {
+    event.target.value = '';
     return;
   }
-
-  const params = new URLSearchParams({
-    search: filterState.search,
-    village: filterState.village,
-    status: filterState.status,
-    token: authState.token
-  });
-  window.location.href = `/api/farmers/export/csv?${params.toString()}`;
+  const reader = new FileReader();
+  reader.onload = async function () {
+    try {
+      const payload = JSON.parse(reader.result);
+      const res = await fetch('/api/backup/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Restore failed');
+      alert(`Database successfully restored! (${data.restoredCount} records)`);
+      fetchFilteredFarmers();
+      loadDashboardStats();
+    } catch (err) {
+      alert('Restore failed: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
 }
 
-// PDF Export Handlers
+// ==========================================================================
+// HIGH-DPI PDF GENERATION & PRINT
+// ==========================================================================
 async function handleDownloadCombined() {
   const btn = document.getElementById('downloadCombinedBtn');
   const origText = btn.innerText;
@@ -1123,15 +1107,16 @@ async function handleDownloadCombined() {
     const cardFront = document.getElementById('card');
     const cardBack = document.getElementById('cardBack');
 
-    const canvasFront = await html2canvas(cardFront, { scale: 3, useCORS: true });
-    const canvasBack = await html2canvas(cardBack, { scale: 3, useCORS: true });
+    const canvasFront = await html2canvas(cardFront, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+    const canvasBack = await html2canvas(cardBack, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
 
     const pdf = new jsPDF('p', 'mm', 'a4');
     const imgDataFront = canvasFront.toDataURL('image/png');
     const imgDataBack = canvasBack.toDataURL('image/png');
 
-    pdf.addImage(imgDataFront, 'PNG', 20, 20, 170, 100);
-    pdf.addImage(imgDataBack, 'PNG', 20, 130, 170, 100);
+    // Standard CR-80 proportion rendered centered on A4
+    pdf.addImage(imgDataFront, 'PNG', 35, 30, 140, 88.2);
+    pdf.addImage(imgDataBack, 'PNG', 35, 130, 140, 88.2);
 
     const cardId = document.getElementById('fid').innerText || 'KC-1001';
     pdf.save(`Kisan_Card_Dual_${cardId}.pdf`);
@@ -1144,20 +1129,22 @@ async function handleDownloadCombined() {
 
 async function handleDownload() {
   const cardFront = document.getElementById('card');
-  const canvas = await html2canvas(cardFront, { scale: 3, useCORS: true });
+  const canvas = await html2canvas(cardFront, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('l', 'mm', [85.6, 53.98]);
   pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 85.6, 53.98);
-  pdf.save('Kisan_Card_Front.pdf');
+  const cardId = document.getElementById('fid').innerText || 'KC-1001';
+  pdf.save(`Kisan_Card_Front_${cardId}.pdf`);
 }
 
 async function handleDownloadBack() {
   const cardBack = document.getElementById('cardBack');
-  const canvas = await html2canvas(cardBack, { scale: 3, useCORS: true });
+  const canvas = await html2canvas(cardBack, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('l', 'mm', [85.6, 53.98]);
   pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 85.6, 53.98);
-  pdf.save('Kisan_Card_Back.pdf');
+  const cardId = document.getElementById('fid').innerText || 'KC-1001';
+  pdf.save(`Kisan_Card_Back_${cardId}.pdf`);
 }
 
 function handlePrint() {
@@ -1174,84 +1161,36 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-// Initial Boot
-document.addEventListener('DOMContentLoaded', () => {
-  checkAuthStatus();
-  loadDashboardStats();
-  setID(document.getElementById('cardInput').value || 'KC-1001');
-});
-
 function switchMobileCardFace(face) {
-  const front = document.getElementById('frontCardWrapper');
-  const back = document.getElementById('backCardWrapper');
+  const frontWrapper = document.getElementById('frontCardWrapper');
+  const backWrapper = document.getElementById('backCardWrapper');
   const btnFront = document.getElementById('btnShowFront');
   const btnBack = document.getElementById('btnShowBack');
   const btnBoth = document.getElementById('btnShowBoth');
 
-  if (btnFront) btnFront.classList.remove('active');
-  if (btnBack) btnBack.classList.remove('active');
-  if (btnBoth) btnBoth.classList.remove('active');
+  [btnFront, btnBack, btnBoth].forEach(b => b.classList.remove('active'));
 
   if (face === 'front') {
-    if (front) front.style.display = 'flex';
-    if (back) back.style.display = 'none';
-    if (btnFront) btnFront.classList.add('active');
+    frontWrapper.style.display = 'flex';
+    backWrapper.style.display = 'none';
+    btnFront.classList.add('active');
   } else if (face === 'back') {
-    if (front) front.style.display = 'none';
-    if (back) back.style.display = 'flex';
-    if (btnBack) btnBack.classList.add('active');
+    frontWrapper.style.display = 'none';
+    backWrapper.style.display = 'flex';
+    btnBack.classList.add('active');
   } else {
-    if (front) front.style.display = 'flex';
-    if (back) back.style.display = 'flex';
-    if (btnBoth) btnBoth.classList.add('active');
+    frontWrapper.style.display = 'flex';
+    backWrapper.style.display = 'flex';
+    btnBoth.classList.add('active');
   }
 }
 
-async function exportBackup() {
-  if (!authState.isAuthenticated) {
-    openLoginModal('registry');
-    return;
-  }
-  window.location.href = `/api/backup/export?token=${encodeURIComponent(authState.token)}`;
-}
-
-async function handleRestoreFile(event) {
-  if (!authState.isAuthenticated) {
-    openLoginModal('registry');
-    return;
-  }
-
-  const file = event.target.files[0];
-  if (!file) return;
-
-  if (!confirm(`Are you sure you want to restore records from "${file.name}"? This will import all valid farmer records.`)) {
-    event.target.value = '';
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = async function () {
-    try {
-      const parsed = JSON.parse(reader.result);
-      const payload = Array.isArray(parsed) ? { farmers: parsed } : parsed;
-
-      const res = await fetch('/api/backup/restore', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Restore failed');
-
-      alert(`✅ Database restored successfully! ${data.restoredCount} records loaded.`);
-      loadDashboardStats();
-      fetchFilteredFarmers();
-    } catch (err) {
-      alert('❌ Failed to restore database: ' + err.message);
-    } finally {
-      event.target.value = '';
-    }
-  };
-  reader.readAsText(file);
-}
+// ==========================================================================
+// INITIALIZATION
+// ==========================================================================
+document.addEventListener('DOMContentLoaded', () => {
+  updateLanguageUI();
+  checkAuthStatus();
+  loadDashboardStats();
+  setID('KC-1001');
+});

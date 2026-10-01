@@ -8,7 +8,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
     <link rel="stylesheet" href="style.css" />
     <style>
@@ -18,29 +18,36 @@
         padding-bottom: 3rem;
       }
       .verify-hero {
-        background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+        background: linear-gradient(135deg, #14532d 0%, #166534 60%, #15803d 100%);
         color: #ffffff;
-        padding: 2rem 1rem;
+        padding: 2.25rem 1rem;
         text-align: center;
-        border-bottom: 4px solid #eab308;
+        border-bottom: 4px solid #16a34a;
         box-shadow: var(--shadow-md);
+        position: relative;
+      }
+      .verify-lang-wrap {
+        position: absolute;
+        top: 1rem;
+        right: 1.5rem;
       }
       .verify-emblem {
-        height: 46px;
+        height: 48px;
         margin-bottom: 0.5rem;
         filter: brightness(0) invert(1);
       }
       .verify-hero h1 {
-        font-size: 1.5rem;
+        font-size: 1.55rem;
         font-weight: 800;
         letter-spacing: -0.02em;
         margin-bottom: 0.25rem;
       }
       .verify-hero p {
-        color: #a7f3d0;
+        color: #bbf7d0;
         font-size: 0.85rem;
         max-width: 550px;
         margin: 0 auto;
+        font-weight: 500;
       }
       .verify-card-container {
         max-width: 680px;
@@ -52,7 +59,7 @@
         border-radius: var(--radius-lg);
         padding: 1.25rem;
         box-shadow: var(--shadow-lg);
-        border: 1px solid var(--border-color);
+        border: 1.5px solid var(--border-color);
         margin-bottom: 1.25rem;
       }
       .verify-input-group {
@@ -75,12 +82,13 @@
       .verify-input:focus {
         outline: none;
         border-color: var(--primary);
+        box-shadow: var(--focus-ring);
       }
       .verify-result-card {
         background: #ffffff;
         border-radius: var(--radius-lg);
         box-shadow: var(--shadow-xl);
-        border: 1px solid var(--border-color);
+        border: 1.5px solid var(--border-color);
         overflow: hidden;
         display: none;
         animation: fadeIn 0.3s ease;
@@ -97,11 +105,11 @@
       }
       .badge-valid {
         background: #ecfdf5;
-        border-bottom: 2px solid #34d399;
+        border-bottom: 2px solid #86efac;
       }
       .badge-invalid {
         background: #fef2f2;
-        border-bottom: 2px solid #f87171;
+        border-bottom: 2px solid #fca5a5;
       }
       .seal-icon {
         width: 48px;
@@ -113,12 +121,12 @@
         font-size: 1.5rem;
         flex-shrink: 0;
       }
-      .seal-valid { background: #d1fae5; color: #059669; }
-      .seal-invalid { background: #fee2e2; color: #dc2626; }
+      .seal-valid { background: #dcfce7; color: #166534; }
+      .seal-invalid { background: #fee2e2; color: #b91c1c; }
       .verify-title h3 {
         font-size: 1.15rem;
         font-weight: 800;
-        color: #065f46;
+        color: #14532d;
         margin: 0;
       }
       .verify-title p {
@@ -127,19 +135,19 @@
         margin: 2px 0 0 0;
       }
       .verify-body-content {
-        padding: 1.25rem;
+        padding: 1.5rem;
       }
       .farmer-profile-summary {
         display: flex;
         gap: 1.25rem;
         align-items: center;
         padding-bottom: 1.25rem;
-        border-bottom: 1px dashed var(--border-color);
+        border-bottom: 1.5px dashed var(--border-light);
         margin-bottom: 1.25rem;
       }
       .verified-avatar {
-        width: 80px;
-        height: 80px;
+        width: 84px;
+        height: 84px;
         border-radius: var(--radius-md);
         object-fit: cover;
         border: 3px solid #15803d;
@@ -147,15 +155,16 @@
         flex-shrink: 0;
       }
       .verified-names h2 {
-        font-size: 1.25rem;
+        font-size: 1.3rem;
         font-weight: 800;
         color: var(--text-primary);
         margin: 0;
       }
       .verified-names .mr-name {
-        font-size: 1rem;
+        font-size: 1.05rem;
         color: var(--primary-dark);
         font-family: var(--font-mr);
+        font-weight: 700;
         margin: 2px 0 6px 0;
       }
       .verified-grid {
@@ -167,6 +176,7 @@
         .verified-grid { grid-template-columns: 1fr; }
         .farmer-profile-summary { flex-direction: column; text-align: center; }
         .verify-input-group .btn { width: 100%; }
+        .verify-lang-wrap { position: static; margin-bottom: 0.5rem; }
       }
       .verified-item {
         background: #f8fafc;
@@ -175,56 +185,63 @@
         border: 1px solid var(--border-color);
       }
       .v-label {
-        font-size: 0.7rem;
+        font-size: 0.72rem;
         font-weight: 700;
         color: var(--text-muted);
         text-transform: uppercase;
+        letter-spacing: 0.03em;
         display: block;
         margin-bottom: 2px;
       }
       .v-value {
-        font-size: 0.9rem;
-        font-weight: 600;
+        font-size: 0.92rem;
+        font-weight: 700;
         color: var(--text-primary);
       }
       .privacy-notice {
         margin-top: 1.25rem;
-        padding: 0.75rem;
+        padding: 0.85rem 1rem;
         background: #f0fdf4;
         border-radius: var(--radius-md);
         border: 1px solid #bbf7d0;
-        font-size: 0.75rem;
-        color: #166534;
+        font-size: 0.78rem;
+        color: #14532d;
         display: flex;
-        gap: 0.5rem;
+        gap: 0.6rem;
         align-items: center;
+        line-height: 1.4;
       }
       .verify-footer-nav {
         text-align: center;
-        margin-top: 1.25rem;
+        margin-top: 1.5rem;
       }
     </style>
   </head>
   <body class="verify-page">
     <header class="verify-hero">
+      <div class="verify-lang-wrap">
+        <button type="button" class="lang-toggle-btn" onclick="toggleVerifyLanguage()" style="background: rgba(255,255,255,0.2); color: #fff; border-color: rgba(255,255,255,0.4);">
+          <span>🌐</span> <span id="vLangLabel">मराठी</span>
+        </button>
+      </div>
       <img class="verify-emblem" src="https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg" alt="Emblem of India" />
-      <h1>AGRISTACK DIGITAL VERIFICATION</h1>
-      <p>Department of Agriculture & Farmers Welfare • Government of India</p>
+      <h1 id="vHeroTitle">AGRISTACK DIGITAL VERIFICATION</h1>
+      <p id="vHeroSubtitle">Department of Agriculture & Farmers Welfare • Government of India</p>
     </header>
 
     <main class="verify-card-container">
       <div class="verify-search-box">
-        <label for="verifyCardInput" class="filter-label" style="font-size: 0.8rem;">Enter Kisan Card Number to Verify</label>
+        <label for="verifyCardInput" class="filter-label" id="vSearchLabel" style="font-size: 0.85rem; margin-bottom: 0.4rem; display: block;">Enter Kisan Card Number to Verify</label>
         <div class="verify-input-group">
           <input id="verifyCardInput" class="verify-input" placeholder="e.g. KC-1001" onkeydown="if(event.key==='Enter') executeVerification()" />
           <button type="button" class="btn btn-primary" onclick="executeVerification()">
-            <span>🔍</span> Verify Identity
+            <span>🔍</span> <span id="vBtnVerify">Verify Identity</span>
           </button>
         </div>
       </div>
 
       <!-- Result Card -->
-      <div id="verifyResult" class="verify-result-card">
+      <div id="verifyResult" class="verify-result-card" role="region" aria-label="Verification Results">
         <div class="verify-badge-header badge-valid" id="verifyHeader">
           <div class="seal-icon seal-valid" id="verifySeal">✅</div>
           <div class="verify-title">
@@ -246,52 +263,52 @@
 
           <div class="verified-grid">
             <div class="verified-item">
-              <span class="v-label">Father's Name</span>
+              <span class="v-label" id="vLblFather">Father's Name</span>
               <div class="v-value" id="verifiedFather">-</div>
             </div>
             <div class="verified-item">
-              <span class="v-label">Village / Cluster</span>
+              <span class="v-label" id="vLblVillage">Village / Cluster</span>
               <div class="v-value" id="verifiedVillage">-</div>
             </div>
             <div class="verified-item">
-              <span class="v-label">Survey / Gat No.</span>
+              <span class="v-label" id="vLblSurvey">Survey / Gat No.</span>
               <div class="v-value" id="verifiedSurvey">-</div>
             </div>
             <div class="verified-item">
-              <span class="v-label">Total Land Holding</span>
-              <div class="v-value text-green" id="verifiedArea">-</div>
+              <span class="v-label" id="vLblArea">Total Land Holding</span>
+              <div class="v-value text-green" id="verifiedArea" style="color: #15803d;">-</div>
             </div>
             <div class="verified-item">
-              <span class="v-label">Registered Address</span>
+              <span class="v-label" id="vLblAddress">Registered Address</span>
               <div class="v-value" id="verifiedAddress">-</div>
             </div>
             <div class="verified-item">
-              <span class="v-label">Aadhaar (Privacy Protected)</span>
-              <div class="v-value font-mono" id="verifiedAadhaar">XXXX XXXX 9012</div>
+              <span class="v-label" id="vLblAadhaar">Aadhaar (Privacy Protected)</span>
+              <div class="v-value" id="verifiedAadhaar" style="font-family: monospace;">XXXX XXXX 9012</div>
             </div>
           </div>
 
           <div class="privacy-notice">
-            <span>🛡️</span>
+            <span style="font-size: 1.2rem;">🛡️</span>
             <div>
-              <strong>Privacy Safeguarded:</strong> This public registry view complies with national digital identity standards. Personal identifying numbers remain securely masked.
+              <strong id="vNoticeTitle">Privacy Safeguarded:</strong> <span id="vNoticeText">This public registry view complies with national digital identity standards. Sensitive Aadhaar details remain masked.</span>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Invalid / Error Message -->
-      <div id="verifyError" class="verify-result-card" style="display: none;">
+      <div id="verifyError" class="verify-result-card" style="display: none;" role="alert">
         <div class="verify-badge-header badge-invalid">
           <div class="seal-icon seal-invalid">❌</div>
           <div class="verify-title">
-            <h3 style="color: #b91c1c;">Verification Failed / Record Not Found</h3>
+            <h3 style="color: #b91c1c;" id="vErrHead">Verification Failed / Record Not Found</h3>
             <p id="verifyErrorMessage">No active record exists for this Kisan Card number.</p>
           </div>
         </div>
-        <div class="verify-body-content text-center py-3">
-          <p class="text-muted" style="font-size: 0.85rem;">Please double check the card number printed on the physical card or scan the QR code again.</p>
-          <button class="btn btn-outline mt-2" onclick="document.getElementById('verifyCardInput').focus()">Try Another ID</button>
+        <div class="verify-body-content text-center py-3" style="text-align: center; padding: 1.5rem;">
+          <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 1rem;" id="vErrSub">Please double check the card number printed on the physical card or scan the QR code again.</p>
+          <button class="btn btn-outline" onclick="document.getElementById('verifyCardInput').focus()">Try Another ID</button>
         </div>
       </div>
 
@@ -301,6 +318,70 @@
     </main>
 
     <script>
+      let currentLang = localStorage.getItem('kisan_lang') || 'en';
+
+      const verifyDict = {
+        en: {
+          langLabel: 'मराठी',
+          heroTitle: 'AGRISTACK DIGITAL VERIFICATION',
+          heroSubtitle: 'Department of Agriculture & Farmers Welfare • Government of India',
+          searchLabel: 'Enter Kisan Card Number to Verify',
+          btnVerify: 'Verify Identity',
+          headline: 'Authentic & Verified Kisan Identity Card',
+          subhead: 'Issued under AgriStack Agricultural Registry Program',
+          lblFather: "Father's Name",
+          lblVillage: 'Village / Cluster',
+          lblSurvey: 'Survey / Gat No.',
+          lblArea: 'Total Land Holding',
+          lblAddress: 'Registered Address',
+          lblAadhaar: 'Aadhaar (Privacy Protected)',
+          noticeTitle: 'Privacy Safeguarded:',
+          noticeText: 'This public registry view complies with national digital identity standards. Sensitive Aadhaar details remain masked.'
+        },
+        mr: {
+          langLabel: 'English',
+          heroTitle: 'अ‍ॅग्रीस्टॅक डिजिटल कार्ड पडताळणी',
+          heroSubtitle: 'कृषी व शेतकरी कल्याण विभाग • भारत सरकार',
+          searchLabel: 'पडताळणीसाठी किसान कार्ड क्रमांक प्रविष्ट करा',
+          btnVerify: 'ओळख पडताळा',
+          headline: 'प्रमाणित आणि अधिकृत किसान ओळखपत्र',
+          subhead: 'अ‍ॅग्रीस्टॅक शेतकरी नोंदणी प्रणाली अंतर्गत जारी',
+          lblFather: 'वडिलांचे नाव',
+          lblVillage: 'गाव / मंडळ',
+          lblSurvey: 'सर्व्हे / गट क्रमांक',
+          lblArea: 'एकूण जमीन क्षेत्रफळ',
+          lblAddress: 'नोंदणीकृत पत्ता',
+          lblAadhaar: 'आधार क्रमांक (सुरक्षित)',
+          noticeTitle: 'गोपनीयता संरक्षित:',
+          noticeText: 'हे सार्वजनिक पोर्टल डिजिटल गोपनीयता नियमांचे पालन करते. आधार क्रमांक पूर्णपणे सुरक्षित ठेवण्यात आला आहे.'
+        }
+      };
+
+      function updateVerifyLanguageUI() {
+        const d = verifyDict[currentLang] || verifyDict.en;
+        document.getElementById('vLangLabel').innerText = d.langLabel;
+        document.getElementById('vHeroTitle').innerText = d.heroTitle;
+        document.getElementById('vHeroSubtitle').innerText = d.heroSubtitle;
+        document.getElementById('vSearchLabel').innerText = d.searchLabel;
+        document.getElementById('vBtnVerify').innerText = d.btnVerify;
+        document.getElementById('verifyHeadline').innerText = d.headline;
+        document.getElementById('verifySubhead').innerText = d.subhead;
+        document.getElementById('vLblFather').innerText = d.lblFather;
+        document.getElementById('vLblVillage').innerText = d.lblVillage;
+        document.getElementById('vLblSurvey').innerText = d.lblSurvey;
+        document.getElementById('vLblArea').innerText = d.lblArea;
+        document.getElementById('vLblAddress').innerText = d.lblAddress;
+        document.getElementById('vLblAadhaar').innerText = d.lblAadhaar;
+        document.getElementById('vNoticeTitle').innerText = d.noticeTitle;
+        document.getElementById('vNoticeText').innerText = d.noticeText;
+      }
+
+      function toggleVerifyLanguage() {
+        currentLang = currentLang === 'en' ? 'mr' : 'en';
+        localStorage.setItem('kisan_lang', currentLang);
+        updateVerifyLanguageUI();
+      }
+
       async function verifyCard(cardId) {
         if (!cardId) return;
         const resultCard = document.getElementById('verifyResult');
@@ -351,6 +432,7 @@
       }
 
       document.addEventListener('DOMContentLoaded', () => {
+        updateVerifyLanguageUI();
         const params = new URLSearchParams(window.location.search);
         const cardId = params.get('id') || params.get('card') || params.get('cardNumber');
         if (cardId) {

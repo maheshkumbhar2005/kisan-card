@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Kisan Card Pro - Executive Dashboard, Generator & Registry</title>
 
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Outfit for crisp modern UI, Noto Sans Devanagari for Marathi -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
-    <!-- External Libraries for PDF & Printing -->
+    <!-- External Libraries for High-DPI PDF & Printing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -19,64 +19,74 @@
 
   <body>
     <!-- Top Modern Navigation -->
-    <header class="app-header">
+    <header class="app-header" role="banner">
       <div class="header-inner">
-        <div class="brand-area">
-          <div class="brand-logo">🌾</div>
+        <div class="brand-area" role="heading" aria-level="1">
+          <div class="brand-logo" aria-hidden="true">🌱</div>
           <div class="brand-text">
-            <h1>KISAN CARD <span>PRO</span></h1>
-            <p>Department of Agriculture • Digital Identity Suite</p>
+            <h1 id="appTitle">KISAN CARD <span>PRO</span></h1>
+            <p id="appSubtitle">Department of Agriculture • Digital Identity Suite</p>
           </div>
         </div>
 
-        <nav class="nav-tabs">
-          <button class="nav-tab active" id="tabDashboard" onclick="switchView('dashboard')">
-            <span class="tab-icon">📊</span> Dashboard
+        <nav class="nav-tabs" role="tablist" aria-label="Main Navigation">
+          <button class="nav-tab active" id="tabDashboard" role="tab" aria-selected="true" onclick="switchView('dashboard')">
+            <span class="tab-icon" aria-hidden="true">📊</span> <span data-i18n="navDashboard">Dashboard</span>
           </button>
-          <button class="nav-tab" id="tabStudio" onclick="handleProtectedNavigation('studio')">
-            <span class="tab-icon">🪪</span> Generator
+          <button class="nav-tab" id="tabStudio" role="tab" aria-selected="false" onclick="handleProtectedNavigation('studio')">
+            <span class="tab-icon" aria-hidden="true">🪪</span> <span data-i18n="navGenerator">Generator</span>
           </button>
-          <button class="nav-tab" id="tabRegistry" onclick="handleProtectedNavigation('registry')">
-            <span class="tab-icon">📁</span> Registry
-            <span class="nav-badge" id="navFarmerCount">0</span>
+          <button class="nav-tab" id="tabRegistry" role="tab" aria-selected="false" onclick="handleProtectedNavigation('registry')">
+            <span class="tab-icon" aria-hidden="true">📁</span> <span data-i18n="navRegistry">Registry</span>
+            <span class="nav-badge" id="navFarmerCount" aria-label="Total registered farmers count">0</span>
           </button>
         </nav>
 
         <div class="header-actions">
-          <a href="/verify.html" target="_blank" class="btn btn-sm btn-outline" title="Public Online Verification Portal">
-            <span>🔍</span> Verify Card
+          <!-- Language Switcher Toggle -->
+          <button type="button" class="lang-toggle-btn" id="langToggleBtn" onclick="toggleLanguage()" title="Switch Language between English and Marathi / भाषा बदला" aria-label="Switch Language between English and Marathi">
+            <span>🌐</span> <span id="currentLangLabel">मराठी</span>
+          </button>
+
+          <!-- Safe QR Verification Portal Link -->
+          <a href="/verify.html" target="_blank" class="btn btn-sm btn-outline" title="Public Online Verification Portal" aria-label="Open Public Online Verification Portal">
+            <span aria-hidden="true">🔍</span> <span data-i18n="navVerify">Verify Card</span>
           </a>
+
           <!-- Dynamic Auth Area -->
           <div id="authArea" class="auth-header-area">
-            <button type="button" class="btn btn-sm btn-outline btn-admin-login" id="loginBtn" onclick="openLoginModal()">
-              <span>🔐</span> Admin
+            <button type="button" class="btn btn-sm btn-outline btn-admin-login" id="loginBtn" onclick="openLoginModal()" aria-label="Administrator Login">
+              <span aria-hidden="true">🔐</span> <span data-i18n="navAdmin">Admin</span>
             </button>
             <div id="loggedInUserBadge" class="admin-user-badge" style="display: none;">
-              <span class="admin-indicator-dot"></span>
+              <span class="admin-indicator-dot" aria-hidden="true"></span>
               <span class="admin-username" id="adminUserDisplay">Admin</span>
-              <button type="button" class="btn-logout-icon" onclick="logoutAdmin()" title="Logout Admin">🚪</button>
+              <button type="button" class="btn-logout-icon" onclick="logoutAdmin()" title="Logout Admin" aria-label="Logout Admin">🚪</button>
             </div>
           </div>
-          <button class="btn btn-sm btn-primary" onclick="handleProtectedNavigation('studio'); clearForm();">
-            <span>➕</span> New Card
+
+          <button class="btn btn-sm btn-primary" onclick="handleProtectedNavigation('studio'); clearForm();" aria-label="Create New Kisan Card">
+            <span aria-hidden="true">✨</span> <span data-i18n="navNewCard">New Card</span>
           </button>
         </div>
       </div>
     </header>
 
-    <!-- VIEW 1: EXECUTIVE DASHBOARD -->
-    <section id="viewDashboard" class="view-section active">
+    <!-- ==========================================================================
+         VIEW 1: EXECUTIVE DASHBOARD
+         ========================================================================== -->
+    <section id="viewDashboard" class="view-section active" role="tabpanel" aria-labelledby="tabDashboard">
       <div class="dashboard-hero">
         <div class="hero-text">
-          <h2>Agricultural Identity & Analytics Intelligence</h2>
-          <p>Real-time analytics for registered farmers, village demographic distribution, and land parcels.</p>
+          <h2 data-i18n="dashHeroTitle">Agricultural Identity & Analytics Intelligence</h2>
+          <p data-i18n="dashHeroSubtitle">Real-time analytics for registered farmers, village demographic distribution, and land parcels.</p>
         </div>
         <div class="hero-actions">
           <button class="btn btn-primary" onclick="handleProtectedNavigation('studio')">
-            <span>✨</span> Generate Kisan Card
+            <span aria-hidden="true">🪪</span> <span data-i18n="dashBtnGenerate">Generate Kisan Card</span>
           </button>
           <button class="btn btn-secondary" onclick="loadDashboardStats()">
-            <span>🔄</span> Refresh Analytics
+            <span aria-hidden="true">🔄</span> <span data-i18n="dashBtnRefresh">Refresh Analytics</span>
           </button>
         </div>
       </div>
@@ -84,374 +94,310 @@
       <!-- KPI Metrics Row -->
       <div class="metrics-grid">
         <div class="metric-card card-glow-green">
-          <div class="metric-icon-wrap bg-green-light">
-            <span class="metric-icon">👥</span>
+          <div class="metric-icon-wrap bg-green-light" aria-hidden="true">
+            <span class="metric-icon">👨‍🌾</span>
           </div>
           <div class="metric-body">
-            <span class="metric-label">Total Farmers Registered</span>
+            <span class="metric-label" data-i18n="metricTotalFarmers">Total Farmers Registered</span>
             <div class="metric-val-row">
               <h3 id="statTotalFarmers" class="metric-value">0</h3>
-              <span class="metric-badge badge-green">Live Count</span>
+              <span class="metric-badge badge-green" data-i18n="badgeLive">Live Count</span>
             </div>
             <p class="metric-subtext">
-              <span id="statActiveFarmers">0</span> active / <span id="statInactiveFarmers">0</span> pending
+              <span id="statActiveFarmers">0</span> <span data-i18n="metricActive">active</span> / <span id="statInactiveFarmers">0</span> <span data-i18n="metricPending">pending</span>
             </p>
           </div>
         </div>
 
         <div class="metric-card card-glow-blue">
-          <div class="metric-icon-wrap bg-blue-light">
-            <span class="metric-icon">🏡</span>
+          <div class="metric-icon-wrap bg-blue-light" aria-hidden="true">
+            <span class="metric-icon">🏘️</span>
           </div>
           <div class="metric-body">
-            <span class="metric-label">Villages Covered</span>
+            <span class="metric-label" data-i18n="metricVillages">Villages Covered</span>
             <div class="metric-val-row">
               <h3 id="statTotalVillages" class="metric-value">0</h3>
-              <span class="metric-badge badge-blue">Jurisdiction</span>
+              <span class="metric-badge badge-blue" data-i18n="badgeClusters">Clusters</span>
             </div>
-            <p class="metric-subtext">Active agricultural clusters</p>
+            <p class="metric-subtext"><span data-i18n="metricActiveClusters">Active rural clusters</span></p>
           </div>
         </div>
 
-        <div class="metric-card card-glow-amber">
-          <div class="metric-icon-wrap bg-amber-light">
-            <span class="metric-icon">🗺️</span>
+        <div class="metric-card card-glow-gold">
+          <div class="metric-icon-wrap bg-gold-light" aria-hidden="true">
+            <span class="metric-icon">🌾</span>
           </div>
           <div class="metric-body">
-            <span class="metric-label">Total Land Area</span>
+            <span class="metric-label" data-i18n="metricLandArea">Total Land Area</span>
             <div class="metric-val-row">
-              <h3 id="statTotalArea" class="metric-value">0.00</h3>
-              <span class="metric-unit">Hectares</span>
+              <h3 id="statTotalLandArea" class="metric-value">0.00</h3>
+              <span class="metric-badge badge-gold" data-i18n="badgeHectares">Hectares</span>
             </div>
-            <p class="metric-subtext">
-              Avg: <span id="statAvgArea">0.00</span> Ha per farmer
-            </p>
-          </div>
-        </div>
-
-        <div class="metric-card card-glow-purple">
-          <div class="metric-icon-wrap bg-purple-light">
-            <span class="metric-icon">🛡️</span>
-          </div>
-          <div class="metric-body">
-            <span class="metric-label">Identity Verification</span>
-            <div class="metric-val-row">
-              <h3 id="statVerificationRate" class="metric-value">100%</h3>
-              <span class="metric-badge badge-purple">Secured</span>
-            </div>
-            <p class="metric-subtext">Aadhaar & Survey cross-checked</p>
+            <p class="metric-subtext"><span data-i18n="metricAvgHolding">Avg:</span> <span id="statAvgLandArea">0.00</span> Ha / <span data-i18n="metricFarmer">farmer</span></p>
           </div>
         </div>
       </div>
 
-      <!-- Dashboard Visual Analytics Section -->
-      <div class="dashboard-analytics-grid">
-        <!-- Village Wise Farmer Breakdown -->
-        <div class="analytics-card village-breakdown-card">
+      <!-- Village Distribution & Recent Registrations -->
+      <div class="analytics-grid">
+        <div class="analytics-card">
           <div class="card-head-flex">
-            <div>
-              <h3>🏘️ Village-Wise Farmer Count</h3>
-              <p class="card-subtitle">Distribution of registered farmers by village cluster</p>
-            </div>
-            <span class="badge-pill" id="villageBreakdownTotal">0 Villages</span>
+            <h3 data-i18n="dashVillageDist">🏘️ Village-wise Farmer Distribution</h3>
+            <span class="badge" id="dashVillageCountBadge">0 Villages</span>
           </div>
-
-          <div class="village-bars-container" id="villageStatsList">
-            <div class="empty-state-sm">No village records available.</div>
+          <div id="villageStatsContainer" class="village-stats-list">
+            <div class="text-muted" style="padding: 1rem; text-align: center;" data-i18n="loadingStats">Loading village statistics...</div>
           </div>
         </div>
 
-        <!-- Land Area Summary & Agricultural Classification -->
-        <div class="analytics-card land-summary-card">
+        <div class="analytics-card">
           <div class="card-head-flex">
-            <div>
-              <h3>🌾 Land Area Visual Summary</h3>
-              <p class="card-subtitle">Agricultural census holding distribution</p>
-            </div>
+            <h3 data-i18n="dashRecentReg">⏱️ Recent Registrations</h3>
+            <button class="btn btn-sm btn-outline" onclick="handleProtectedNavigation('registry')"><span data-i18n="viewAll">View All →</span></button>
           </div>
-
-          <div class="land-distribution-bars">
-            <div class="distribution-segment-bar">
-              <div id="barMarginal" class="bar-seg seg-marginal" style="width: 25%" title="Marginal (<1 Ha)"></div>
-              <div id="barSmall" class="bar-seg seg-small" style="width: 25%" title="Small (1-2 Ha)"></div>
-              <div id="barSemiMedium" class="bar-seg seg-semi" style="width: 25%" title="Semi-Medium (2-4 Ha)"></div>
-              <div id="barLarge" class="bar-seg seg-large" style="width: 25%" title="Large (>4 Ha)"></div>
-            </div>
-
-            <div class="land-legend-grid">
-              <div class="legend-item">
-                <span class="legend-dot dot-marginal"></span>
-                <div class="legend-info">
-                  <strong>Marginal (&lt; 1 Ha)</strong>
-                  <span id="countMarginal">0 farmers</span>
-                </div>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot dot-small"></span>
-                <div class="legend-info">
-                  <strong>Small (1 - 2 Ha)</strong>
-                  <span id="countSmall">0 farmers</span>
-                </div>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot dot-semi"></span>
-                <div class="legend-info">
-                  <strong>Semi-Medium (2 - 4 Ha)</strong>
-                  <span id="countSemiMedium">0 farmers</span>
-                </div>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot dot-large"></span>
-                <div class="legend-info">
-                  <strong>Large (&gt; 4 Ha)</strong>
-                  <span id="countLarge">0 farmers</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="land-summary-banner">
-              <div class="insight-item">
-                <span>Total Documented Land</span>
-                <strong id="bannerTotalLand">0.00 Hectares</strong>
-              </div>
-              <div class="insight-divider"></div>
-              <div class="insight-item">
-                <span>Average Land Holding</span>
-                <strong id="bannerAvgLand">0.00 Ha / Farmer</strong>
-              </div>
-            </div>
+          <div id="recentRegistrationsContainer" class="recent-list">
+            <div class="text-muted" style="padding: 1rem; text-align: center;" data-i18n="loadingRecent">Loading recent registrations...</div>
           </div>
-        </div>
-      </div>
-
-      <!-- Recent Registrations Section -->
-      <div class="recent-registrations-card">
-        <div class="recent-header">
-          <div>
-            <h3>⏱️ Recent Registrations</h3>
-            <p class="card-subtitle">Latest issued farmer identity cards and records</p>
-          </div>
-          <button type="button" class="btn btn-sm btn-outline" onclick="handleProtectedNavigation('registry')">
-            View All in Registry ➔
-          </button>
-        </div>
-
-        <div class="table-responsive">
-          <table class="recent-table">
-            <thead>
-              <tr>
-                <th>Card ID</th>
-                <th>Farmer Name</th>
-                <th>Father's Name</th>
-                <th>Village</th>
-                <th>Survey No.</th>
-                <th>Area</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="recentFarmersTableBody">
-              <tr>
-                <td colspan="8" class="text-center py-4 text-muted">Loading recent registrations...</td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       </div>
     </section>
 
-    <!-- VIEW 2: CARD STUDIO & GENERATOR (PROTECTED) -->
-    <section id="viewStudio" class="view-section">
+    <!-- ==========================================================================
+         VIEW 2: CARD STUDIO & GENERATOR (PROTECTED)
+         ========================================================================== -->
+    <section id="viewStudio" class="view-section" role="tabpanel" aria-labelledby="tabStudio">
       <main class="main-layout">
         <!-- Form Section -->
         <section class="form-box">
           <div class="box-title">
-            <h3>📝 Farmer Details</h3>
-            <span class="badge">Live Sync</span>
+            <h3 data-i18n="formTitle">📝 Farmer Details</h3>
+            <span class="badge" data-i18n="badgeLiveSync">Live Sync</span>
           </div>
 
           <div class="form-grid">
             <div class="field-group">
-              <label for="cardInput">Card Number</label>
+              <label for="cardInput" data-i18n="labelCardNumber">Card Number</label>
               <input id="cardInput" placeholder="Auto-generated (e.g. KC-1001)" oninput="setID(this.value)" />
             </div>
 
             <div class="field-group">
-              <label for="nameInput">Farmer Name (English) *</label>
+              <label for="nameInput" data-i18n="labelNameEn">Farmer Name (English) *</label>
               <input id="nameInput" placeholder="e.g. Ramesh Patil" data-required="true" oninput="translateName(this.value); clearError(this)" />
             </div>
 
             <div class="field-group">
-              <label for="nameMrInput">Farmer Name (Marathi / मराठी)</label>
+              <label for="nameMrInput" data-i18n="labelNameMr">Farmer Name (Marathi / मराठी)</label>
               <input id="nameMrInput" placeholder="उदा. रमेश पाटील" oninput="document.getElementById('name_mr').innerText=this.value || 'रमेश पाटील'" />
             </div>
 
             <div class="field-group">
-              <label for="fatherInput">Father's Name (English) *</label>
+              <label for="fatherInput" data-i18n="labelFatherEn">Father's Name (English) *</label>
               <input id="fatherInput" placeholder="e.g. Suresh Patil" data-required="true" oninput="translateFather(this.value); clearError(this)" />
             </div>
 
             <div class="field-group">
-              <label for="fatherMrInput">Father's Name (Marathi / मराठी)</label>
+              <label for="fatherMrInput" data-i18n="labelFatherMr">Father's Name (Marathi / मराठी)</label>
               <input id="fatherMrInput" placeholder="उदा. सुरेश पाटील" oninput="document.getElementById('father_mr').innerText=this.value || 'सुरेश पाटील'" />
             </div>
 
             <div class="field-group full-width">
-              <label for="addressInput">Address *</label>
-              <input id="addressInput" placeholder="Village / Taluka / District" data-required="true" oninput="document.getElementById('address').innerText=this.value || 'ABC Street'; clearError(this)" />
+              <label for="addressInput" data-i18n="labelAddress">Address *</label>
+              <input id="addressInput" placeholder="Village / Taluka / District" data-required="true" oninput="document.getElementById('address').innerText=this.value || 'Main Road'; clearError(this)" />
             </div>
 
             <div class="field-group full-width">
-              <label for="aadhaarInput">Aadhaar Number (12 digits)</label>
+              <label for="aadhaarInput" data-i18n="labelAadhaar">Aadhaar Number (12 digits)</label>
               <div class="input-with-action">
                 <input id="aadhaarInput" placeholder="XXXX XXXX XXXX" maxlength="14" oninput="handleAadhaarInput(this)" />
                 <label class="checkbox-inline">
                   <input type="checkbox" id="maskAadhaarCheck" checked onchange="toggleAadhaarMask()" />
-                  <span>Mask</span>
+                  <span data-i18n="labelMask">Mask</span>
                 </label>
               </div>
             </div>
 
             <div class="field-group">
-              <label for="villageInput">Village *</label>
+              <label for="villageInput" data-i18n="labelVillage">Village *</label>
               <input id="villageInput" placeholder="e.g. Takarkheda" data-required="true" oninput="document.getElementById('village').innerText=this.value || 'Takarkheda'; clearError(this)" />
             </div>
 
             <div class="field-group">
-              <label for="surveyInput">Survey No.</label>
+              <label for="surveyInput" data-i18n="labelSurvey">Survey / Gat No.</label>
               <input id="surveyInput" placeholder="e.g. 213" oninput="document.getElementById('survey').innerText=this.value || '213'" />
             </div>
 
             <div class="field-group">
-              <label for="subSurveyInput">Sub-Survey / Hissa</label>
+              <label for="subSurveyInput" data-i18n="labelSubSurvey">Sub-Survey / Hissa</label>
               <input id="subSurveyInput" placeholder="e.g. 2" oninput="document.getElementById('sub').innerText=this.value || '2'" />
             </div>
 
             <div class="field-group">
-              <label for="areaInput">Land Area (Hectare)</label>
+              <label for="areaInput" data-i18n="labelArea">Land Area (Hectare)</label>
               <input id="areaInput" type="number" step="0.01" placeholder="e.g. 1.08" oninput="document.getElementById('area').innerText=this.value || '1.08'" />
             </div>
           </div>
 
-          <div id="validationErrors" class="validation-errors"></div>
+          <div id="validationErrors" class="validation-errors" role="alert"></div>
 
-          <!-- Photo Upload & Camera Capture -->
+          <!-- Photo Upload & Camera Capture with Thumbnail -->
           <div class="photo-upload-card">
-            <div class="photo-info">
-              <label>Farmer Photo</label>
-              <p id="photoName">Default image selected</p>
+            <div class="photo-info-preview">
+              <div class="photo-thumb-wrap">
+                <img id="formPhotoThumb" src="farmer-placeholder.svg" alt="Photo thumbnail" />
+              </div>
+              <div class="photo-info">
+                <label data-i18n="labelFarmerPhoto">Farmer Photo</label>
+                <p id="photoName" data-i18n="defaultPhoto">Default image selected</p>
+              </div>
             </div>
             <div class="photo-actions">
               <input id="photoInput" type="file" accept="image/*" onchange="loadPhoto(event)" style="display:none" />
-              <button type="button" class="btn-sm" onclick="document.getElementById('photoInput').click()">📁 Upload</button>
-              <button type="button" class="btn-sm" onclick="openCameraModal()">📷 Camera</button>
-              <button type="button" class="btn-sm btn-danger-soft" onclick="resetPhoto()">↺ Reset</button>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('photoInput').click()">📁 <span data-i18n="btnUpload">Upload</span></button>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="openCameraModal()">📷 <span data-i18n="btnCamera">Camera</span></button>
+              <button type="button" class="btn btn-sm btn-danger-soft" onclick="resetPhoto()">↺ <span data-i18n="btnReset">Reset</span></button>
             </div>
           </div>
 
           <div class="form-bottom-actions">
-            <button type="button" class="btn btn-save" id="saveBtn" onclick="saveFarmer()">💾 Save Farmer</button>
-            <button type="button" class="btn btn-clear" onclick="clearForm()">🧹 Clear Form</button>
+            <button type="button" class="btn btn-save" id="saveBtn" onclick="saveFarmer()">💾 <span data-i18n="btnSaveFarmer">Save Farmer</span></button>
+            <button type="button" class="btn btn-clear" onclick="clearForm()">🧹 <span data-i18n="btnClearForm">Clear Form</span></button>
           </div>
         </section>
 
         <!-- Preview Section -->
         <section class="preview-section">
-          <div class="section-header">
-            <h3>🪪 Live Card Preview</h3>
+          <div class="preview-header-bar">
+            <h3 data-i18n="previewTitle">🪪 Live Card Preview</h3>
             <div class="export-actions">
-              <button class="btn btn-primary btn-sm" id="downloadCombinedBtn" onclick="handleDownloadCombined()">📑 Dual PDF</button>
-              <button class="btn btn-outline btn-sm" id="downloadBtn" onclick="handleDownload()">Front</button>
-              <button class="btn btn-outline btn-sm" id="downloadBackBtn" onclick="handleDownloadBack()">Back</button>
-              <button class="btn btn-outline btn-sm" id="printBtn" onclick="handlePrint()">🖨️ Print</button>
+              <button class="btn btn-primary btn-sm" id="downloadCombinedBtn" onclick="handleDownloadCombined()" title="Download High-DPI Dual Sided PDF">📑 Dual PDF</button>
+              <button class="btn btn-outline btn-sm" id="downloadBtn" onclick="handleDownload()" title="Download Front Card PDF">Front</button>
+              <button class="btn btn-outline btn-sm" id="downloadBackBtn" onclick="handleDownloadBack()" title="Download Back Card PDF">Back</button>
+              <button class="btn btn-outline btn-sm" id="printBtn" onclick="handlePrint()" title="Print CR-80 Cards">🖨️ Print</button>
             </div>
           </div>
 
           <!-- Mobile Card Face Switcher (Tabs) -->
-          <div class="mobile-card-switcher">
+          <div class="mobile-card-switcher" role="tablist">
             <button type="button" class="card-face-btn active" id="btnShowFront" onclick="switchMobileCardFace('front')">
-              🪪 Front Card
+              🪪 <span data-i18n="faceFront">Front Card</span>
             </button>
             <button type="button" class="card-face-btn" id="btnShowBack" onclick="switchMobileCardFace('back')">
-              📄 Back Card (Land)
+              📄 <span data-i18n="faceBack">Back Card (Land)</span>
             </button>
             <button type="button" class="card-face-btn" id="btnShowBoth" onclick="switchMobileCardFace('both')">
-              📑 Both Cards
+              📑 <span data-i18n="faceBoth">Both Cards</span>
             </button>
           </div>
 
           <div class="card-preview-area" id="printContainer">
-            <!-- FRONT CARD -->
+            <!-- FRONT CR-80 CARD -->
             <div class="card-scale-wrapper" id="frontCardWrapper">
-              <div class="card" id="card">
-                <div class="leaf"></div>
+              <div class="kisan-cr80-card" id="card">
+                <div class="top-stripe"></div>
 
-                <div class="top">
-                  <h2>KISAN CARD</h2>
-                  <img class="emblem" src="https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg" alt="Emblem of India" />
+                <div class="card-header-row">
+                  <div class="card-header-titles">
+                    <h2 data-i18n="cardHeaderTitle">KISAN CARD</h2>
+                    <p data-i18n="cardHeaderSub">Department of Agriculture • Maharashtra</p>
+                  </div>
+                  <div class="card-emblem-wrap">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg" alt="Emblem of India" />
+                  </div>
                 </div>
 
-                <div class="details">
-                  <p><b>Kisan Name :</b> <span id="name_en">Ramesh Patil</span></p>
-                  <p><b>Marathi Name :</b> <span id="name_mr">रमेश पाटील</span></p>
-                  <p><b>Father Name :</b> <span id="father_en">Suresh Patil</span></p>
-                  <p><b>Father Marathi :</b> <span id="father_mr">सुरेश पाटील</span></p>
-                  <p><b>Address :</b> <span id="address">Main Road</span></p>
+                <div class="card-details-grid">
+                  <div class="card-field-row">
+                    <span class="card-label" data-i18n="cardLblName">Kisan Name:</span>
+                    <span class="card-val" id="name_en">Ramesh Patil</span>
+                  </div>
+                  <div class="card-field-row">
+                    <span class="card-label" data-i18n="cardLblNameMr">नाव (मराठी):</span>
+                    <span class="card-val mr-font" id="name_mr">रमेश पाटील</span>
+                  </div>
+                  <div class="card-field-row">
+                    <span class="card-label" data-i18n="cardLblFather">Father Name:</span>
+                    <span class="card-val" id="father_en">Suresh Patil</span>
+                  </div>
+                  <div class="card-field-row">
+                    <span class="card-label" data-i18n="cardLblFatherMr">वडिलांचे नाव:</span>
+                    <span class="card-val mr-font" id="father_mr">सुरेश पाटील</span>
+                  </div>
+                  <div class="card-field-row">
+                    <span class="card-label" data-i18n="cardLblAddress">Address:</span>
+                    <span class="card-val" id="address">Main Road</span>
+                  </div>
                 </div>
 
-                <p class="aadhaar"><b>Aadhaar No :</b> <span id="aadhaar">XXXX XXXX XXXX</span></p>
-
-                <div class="right-box">
-                  <img id="photo" class="photo" src="farmer-placeholder.svg" alt="Farmer photo placeholder" />
+                <div class="card-aadhaar-tag">
+                  <span data-i18n="cardLblAadhaar">Aadhaar:</span>
+                  <span id="aadhaar" style="font-family: monospace; letter-spacing: 0.05em;">XXXX XXXX XXXX</span>
                 </div>
 
-                <div class="id" id="fid">KC-1001</div>
+                <!-- Fixed Standard Photo Container -->
+                <div class="card-photo-box">
+                  <img id="photo" src="farmer-placeholder.svg" alt="Farmer Portrait Photo" />
+                </div>
 
-                <div class="bottom-strip">
-                  <span class="agri-text">AGRI STACK</span>
+                <!-- Card Number Badge -->
+                <div class="card-id-badge" id="fid">KC-1001</div>
+
+                <div class="card-bottom-bar">
+                  <span data-i18n="cardBottomBar">AGRI STACK • DIGITAL FARMER ID</span>
                 </div>
               </div>
             </div>
 
-            <!-- BACK CARD -->
+            <!-- BACK CR-80 CARD -->
             <div class="card-scale-wrapper" id="backCardWrapper">
-              <div class="card back" id="cardBack">
-                <div class="back-header">
-                  <div class="logo">A</div>
+              <div class="kisan-cr80-card back-card" id="cardBack">
+                <div class="top-stripe"></div>
 
-                  <div>
-                    <h3>Agri <span>Card</span></h3>
-                    <p>Information Card for Every Farmer</p>
+                <div class="back-header-row">
+                  <div class="back-brand-group">
+                    <div class="back-brand-logo">A</div>
+                    <div class="back-brand-text">
+                      <h3>Agri <span>Card</span></h3>
+                      <p data-i18n="cardBackTagline">Digital Farm Holding Certificate</p>
+                    </div>
                   </div>
 
-                  <div class="farmer-id">
-                    <b>FARMER ID</b>
-                    <p>Scan to Verify</p>
-                    <img id="qr" class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=KC-1001" alt="QR Code" />
-                  </div>
+                  <!-- QR Code Linking directly to Safe Public Verification Portal -->
+                  <a id="qrLink" href="/verify.html?id=KC-1001" target="_blank" class="back-qr-box" title="Click to verify online">
+                    <b data-i18n="cardBackScan">SCAN TO VERIFY</b>
+                    <img id="qr" class="qr-code-img" src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=KC-1001" alt="QR Code for Online Verification" />
+                    <p data-i18n="cardBackPortal">AgriStack Portal</p>
+                  </a>
                 </div>
 
-                <div class="land">
-                  <h4>Land Details</h4>
-
-                  <table>
-                    <tr>
-                      <th>Village</th>
-                      <th>Survey</th>
-                      <th>Sub Survey</th>
-                      <th>Total Area In Hectare</th>
-                    </tr>
-
-                    <tr>
-                      <td id="village">Takarkheda</td>
-                      <td id="survey">213</td>
-                      <td id="sub">2</td>
-                      <td id="area">1.08</td>
-                    </tr>
+                <div class="card-land-section">
+                  <h4 data-i18n="cardLandHeading">🌾 Land Holding Details</h4>
+                  <table class="land-table">
+                    <thead>
+                      <tr>
+                        <th data-i18n="thVillage">Village</th>
+                        <th data-i18n="thSurvey">Survey</th>
+                        <th data-i18n="thSub">Sub</th>
+                        <th data-i18n="thArea">Area (Hectare)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td id="village">Takarkheda</td>
+                        <td id="survey">213</td>
+                        <td id="sub">2</td>
+                        <td id="area" style="font-weight: 700; color: #15803d;">1.08</td>
+                      </tr>
+                    </tbody>
                   </table>
                 </div>
 
-                <div class="bottom">AGRI STACK — DEPARTMENT OF AGRICULTURE</div>
+                <div class="back-guidelines" data-i18n="cardBackNotice">
+                  * This digital identity card is valid across all state agriculture departments, subsidy programs & crop insurance schemes.
+                </div>
+
+                <div class="card-bottom-bar">
+                  <span>AGRI STACK — DEPARTMENT OF AGRICULTURE</span>
+                </div>
               </div>
             </div>
           </div>
@@ -459,192 +405,141 @@
       </main>
     </section>
 
-    <!-- VIEW 3: FARMERS DIRECTORY REGISTRY (PROTECTED) -->
-    <section id="viewRegistry" class="view-section">
+    <!-- ==========================================================================
+         VIEW 3: FARMERS DIRECTORY REGISTRY (PROTECTED)
+         ========================================================================== -->
+    <section id="viewRegistry" class="view-section" role="tabpanel" aria-labelledby="tabRegistry">
       <div class="registry-container">
         <div class="saved-panel" id="savedPanel">
           <!-- Registry Top Bar -->
           <div class="saved-header">
             <div>
-              <h3>📁 Registered Farmers Directory</h3>
-              <p id="farmerCount" class="farmer-count">Loading registered farmers...</p>
+              <h3 data-i18n="registryTitle">📁 Registered Farmers Directory</h3>
+              <p id="farmerCount" class="farmer-count" data-i18n="loadingFarmers">Loading registered farmers...</p>
             </div>
-            <div class="registry-top-actions">
-              <div class="view-toggle-btns">
-                <button type="button" class="btn-icon-toggle active" id="viewModeGridBtn" onclick="setRegistryViewMode('grid')" title="Grid Card View">
-                  ▦ Grid
-                </button>
-                <button type="button" class="btn-icon-toggle" id="viewModeTableBtn" onclick="setRegistryViewMode('table')" title="Detailed Table View">
-                  ☰ Table
-                </button>
-              </div>
-              <button class="btn btn-sm btn-outline" onclick="exportCSV()">📥 CSV</button>
-              <button class="btn btn-sm btn-outline" onclick="exportBackup()">💾 Backup</button>
-              <button class="btn btn-sm btn-outline" onclick="document.getElementById('restoreFileInput').click()">🔄 Restore</button>
-              <input type="file" id="restoreFileInput" accept=".json" style="display:none;" onchange="handleRestoreFile(event)" />
-              <button class="btn btn-sm btn-primary" onclick="handleProtectedNavigation('studio'); clearForm();">➕ Add Farmer</button>
+            <div class="registry-toolbar">
+              <button class="btn btn-sm btn-outline" onclick="exportCSV()">📊 <span data-i18n="btnExportCsv">Export CSV</span></button>
+              <button class="btn btn-sm btn-outline" onclick="exportBackup()">💾 <span data-i18n="btnBackup">Backup</span></button>
+              <button class="btn btn-sm btn-outline" onclick="document.getElementById('restoreFileInput').click()">🔄 <span data-i18n="btnRestore">Restore</span></button>
+              <input type="file" id="restoreFileInput" accept=".json" style="display: none;" onchange="handleRestoreFile(event)" />
+              <button class="btn btn-sm btn-primary" onclick="handleProtectedNavigation('studio'); clearForm();">✨ <span data-i18n="btnNewCard">Add Farmer</span></button>
             </div>
           </div>
 
-          <!-- Advanced Search & Filter Controls Card -->
-          <div class="advanced-filter-card">
-            <div class="filter-controls-grid">
-              <!-- Search Bar -->
-              <div class="search-input-group">
-                <label for="farmerSearch" class="filter-label">Search Farmers</label>
-                <div class="search-input-wrapper">
-                  <span class="search-prefix-icon">🔍</span>
-                  <input
-                    id="farmerSearch"
-                    class="search-input-field"
-                    placeholder="Search name, village, survey, card no..."
-                    oninput="handleSearchInput(this.value)"
-                  />
-                  <button type="button" class="search-clear-btn" id="searchClearBtn" onclick="clearSearchInput()" title="Clear Search">✕</button>
-                </div>
+          <!-- Advanced Search & Filter Bar -->
+          <div class="search-filter-bar">
+            <div class="search-filter-row">
+              <div class="search-input-wrap">
+                <input id="registrySearchInput" placeholder="🔍 Search by farmer name, village, or card number..." oninput="handleSearchInput(this.value)" />
+                <button type="button" class="clear-search-btn" id="clearSearchBtn" onclick="clearSearchInput()" style="display: none;" title="Clear search">×</button>
               </div>
 
-              <!-- Village Filter -->
-              <div class="filter-field-group">
-                <label for="filterVillage" class="filter-label">Village</label>
-                <select id="filterVillage" class="filter-select" onchange="handleVillageFilter(this.value)">
-                  <option value="all">🏘️ All Villages</option>
+              <div class="filter-group">
+                <label for="villageFilterSelect" class="filter-label" data-i18n="lblVillageFilter">Village:</label>
+                <select id="villageFilterSelect" class="filter-select" onchange="handleVillageFilter(this.value)">
+                  <option value="" data-i18n="optAllVillages">All Villages</option>
                 </select>
               </div>
 
-              <!-- Status Filter -->
-              <div class="filter-field-group">
-                <label for="filterStatus" class="filter-label">Status</label>
-                <select id="filterStatus" class="filter-select" onchange="handleStatusFilter(this.value)">
-                  <option value="all">⚡ All Status</option>
-                  <option value="active">✅ Active & Verified</option>
-                  <option value="inactive">⏳ Pending</option>
+              <div class="filter-group">
+                <label for="statusFilterSelect" class="filter-label" data-i18n="lblStatusFilter">Status:</label>
+                <select id="statusFilterSelect" class="filter-select" onchange="handleStatusFilter(this.value)">
+                  <option value="" data-i18n="optAllStatus">All Status</option>
+                  <option value="active" data-i18n="optActive">Active</option>
+                  <option value="inactive" data-i18n="optPending">Pending</option>
                 </select>
               </div>
 
-              <!-- Sort By Dropdown -->
-              <div class="filter-field-group">
-                <label for="sortSelector" class="filter-label">Sort By</label>
-                <select id="sortSelector" class="filter-select" onchange="handleSortChange(this.value)">
-                  <option value="createdAt_desc">⏱️ Newest First</option>
-                  <option value="createdAt_asc">⏱️ Oldest First</option>
-                  <option value="farmerName_asc">🔤 Name (A → Z)</option>
-                  <option value="farmerName_desc">🔤 Name (Z → A)</option>
-                  <option value="area_desc">🌾 Land (High → Low)</option>
-                  <option value="area_asc">🌾 Land (Low → High)</option>
-                  <option value="village_asc">🏡 Village (A → Z)</option>
-                  <option value="cardNumber_asc">🪪 Card No (Low → High)</option>
-                </select>
-              </div>
-
-              <!-- Page Size -->
-              <div class="filter-field-group filter-sm">
-                <label for="pageSizeSelector" class="filter-label">Per Page</label>
-                <select id="pageSizeSelector" class="filter-select" onchange="handlePageSizeChange(this.value)">
-                  <option value="10">10</option>
-                  <option value="20">20</option>
-                  <option value="50">50</option>
-                  <option value="100">100</option>
+              <div class="filter-group">
+                <label for="sortBySelect" class="filter-label" data-i18n="lblSort">Sort By:</label>
+                <select id="sortBySelect" class="filter-select" onchange="handleSortChange(this.value)">
+                  <option value="date_desc" data-i18n="sortDateDesc">Newest First</option>
+                  <option value="date_asc" data-i18n="sortDateAsc">Oldest First</option>
+                  <option value="name_asc" data-i18n="sortNameAsc">Name (A-Z)</option>
+                  <option value="name_desc" data-i18n="sortNameDesc">Name (Z-A)</option>
+                  <option value="card_asc" data-i18n="sortCardAsc">Card No (Asc)</option>
+                  <option value="area_desc" data-i18n="sortAreaDesc">Area (High to Low)</option>
                 </select>
               </div>
             </div>
 
-            <!-- Active Filter Badges Bar -->
-            <div class="active-filter-chips" id="activeFilterChips">
-              <!-- Dynamically populated chips -->
-            </div>
+            <!-- Active Filter Chips -->
+            <div id="activeFilterChips" class="active-filters-chips" style="display: none;"></div>
           </div>
 
-          <!-- Registry Content Views (Grid & Table) -->
-          <div id="registryResultsContainer">
-            <!-- Grid View -->
-            <div id="farmerList" class="farmer-list">
-              <p class="empty-msg">Loading records...</p>
-            </div>
-
-            <!-- Table View -->
-            <div id="farmerTableWrapper" class="farmer-table-wrapper" style="display: none;">
-              <div class="table-responsive">
-                <table class="registry-data-table">
-                  <thead>
-                    <tr>
-                      <th onclick="toggleTableSort('cardNumber')">Card ID ↕</th>
-                      <th onclick="toggleTableSort('farmerName')">Farmer Name ↕</th>
-                      <th>Father Name</th>
-                      <th onclick="toggleTableSort('village')">Village ↕</th>
-                      <th>Survey No.</th>
-                      <th onclick="toggleTableSort('area')">Area (Ha) ↕</th>
-                      <th>Aadhaar</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="farmerTableBody">
-                    <!-- Populated dynamically -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
+          <!-- Table View Container -->
+          <div class="table-responsive">
+            <table class="registry-table">
+              <thead>
+                <tr>
+                  <th onclick="toggleTableSort('cardNumber')" style="cursor: pointer;" data-i18n="colCardNo">Card No ⬍</th>
+                  <th onclick="toggleTableSort('farmerName')" style="cursor: pointer;" data-i18n="colFarmerName">Farmer Name ⬍</th>
+                  <th onclick="toggleTableSort('village')" style="cursor: pointer;" data-i18n="colVillage">Village ⬍</th>
+                  <th data-i18n="colSurvey">Survey/Gat</th>
+                  <th onclick="toggleTableSort('area')" style="cursor: pointer;" data-i18n="colArea">Area (Ha) ⬍</th>
+                  <th data-i18n="colStatus">Status</th>
+                  <th style="text-align: right;" data-i18n="colActions">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="farmerList">
+                <tr><td colspan="7" style="text-align: center; padding: 2rem;" class="text-muted" data-i18n="loadingFarmers">Loading farmers...</td></tr>
+              </tbody>
+            </table>
           </div>
 
           <!-- Pagination Bar -->
-          <div class="pagination-bar" id="paginationBar">
-            <div class="pagination-info" id="paginationInfo">
-              Showing 0 to 0 of 0 entries
-            </div>
-            <div class="pagination-controls" id="paginationControls">
-              <!-- Dynamically populated buttons -->
-            </div>
+          <div class="pagination-row" id="paginationRow">
+            <div class="pagination-info" id="paginationInfo">Showing 0 of 0 records</div>
+            <div class="pagination-controls" id="paginationControls"></div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Admin Login Modal -->
-    <div id="loginModal" class="modal">
-      <div class="modal-content modal-auth">
-        <div class="modal-header auth-modal-header">
-          <div>
-            <h4>🔐 Administrator Login</h4>
-            <p class="text-xs text-muted" style="margin: 2px 0 0 0;">Enter official credentials to manage records</p>
-          </div>
-          <button type="button" class="close-btn" onclick="closeLoginModal()">✕</button>
+    <!-- ADMIN LOGIN MODAL -->
+    <div id="loginModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="loginModalTitle">🔐 Admin Authentication</h3>
+          <button type="button" class="close-btn" onclick="closeLoginModal()" aria-label="Close modal">×</button>
         </div>
-        <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" class="auth-form-body">
-          <div class="field-group">
-            <label for="adminUsernameInput">Admin Username</label>
-            <input id="adminUsernameInput" required placeholder="e.g. admin" value="admin" />
+        <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
+          <div class="modal-body">
+            <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 1rem;">
+              Please enter administrator credentials to access card generation, editing, and database features.
+            </p>
+            <div class="field-group" style="margin-bottom: 1rem;">
+              <label for="adminUsername">Username</label>
+              <input id="adminUsername" type="text" placeholder="admin" required autocomplete="username" />
+            </div>
+            <div class="field-group">
+              <label for="adminPassword">Password</label>
+              <input id="adminPassword" type="password" placeholder="••••••••" required autocomplete="current-password" />
+            </div>
+            <div id="loginErrorMsg" class="validation-errors"></div>
           </div>
-          <div class="field-group">
-            <label for="adminPasswordInput">Password</label>
-            <input id="adminPasswordInput" type="password" required placeholder="Enter password (default: admin123)" />
-          </div>
-          <div id="loginErrorBox" class="login-error-text" style="display: none;"></div>
-          <div class="modal-footer" style="padding-left: 0; padding-right: 0; border-top: none;">
-            <button type="button" class="btn btn-outline" onclick="closeLoginModal()">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="loginSubmitBtn">Sign In as Admin</button>
-          </div>
-          <div class="auth-helper-note">
-            ℹ️ Default credentials: <code>admin</code> / <code>admin123</code>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeLoginModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="loginSubmitBtn">Authenticate</button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- Camera Modal -->
-    <div id="cameraModal" class="modal">
-      <div class="modal-content">
+    <!-- CAMERA CAPTURE MODAL -->
+    <div id="cameraModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="cameraModalTitle">
+      <div class="modal-content" style="max-width: 540px;">
         <div class="modal-header">
-          <h4>📷 Capture Farmer Photo</h4>
-          <button type="button" class="close-btn" onclick="closeCameraModal()">✕</button>
+          <h3 id="cameraModalTitle">📷 Capture Farmer Photo</h3>
+          <button type="button" class="close-btn" onclick="closeCameraModal()" aria-label="Close modal">×</button>
         </div>
-        <div class="camera-body">
-          <video id="cameraStream" autoplay playsinline></video>
-          <canvas id="cameraCanvas" style="display:none"></canvas>
+        <div class="modal-body" style="text-align: center;">
+          <video id="cameraStream" autoplay playsinline style="width: 100%; border-radius: 8px; background: #000; max-height: 320px;"></video>
+          <canvas id="cameraCanvas" style="display: none;"></canvas>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-primary" onclick="captureCameraPhoto()">📸 Take Snapshot</button>
-          <button type="button" class="btn btn-outline" onclick="closeCameraModal()">Cancel</button>
+          <button type="button" class="btn btn-secondary" onclick="closeCameraModal()">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="captureCameraPhoto()">📸 Take Photo</button>
         </div>
       </div>
     </div>
