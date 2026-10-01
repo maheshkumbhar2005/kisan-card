@@ -1,7 +1,5 @@
 // ==========================================================================
 // KISAN CARD PRO - CLIENT APPLICATION LOGIC
-// Refined: Colors, Typography, Photo Alignment, QR Verification, CR-80 Print,
-// Language Toggle (English/Marathi) & Accessibility
 // ==========================================================================
 
 const API_BASE = '/api/farmers';
@@ -249,9 +247,9 @@ const translations = {
 
 function updateLanguageUI() {
   const dict = translations[currentLanguage] || translations.en;
-  document.getElementById('currentLangLabel').innerText = dict.langLabel;
+  const langLabelEl = document.getElementById('currentLangLabel');
+  if (langLabelEl) langLabelEl.innerText = dict.langLabel;
 
-  // Apply to all data-i18n elements
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     if (dict[key]) {
@@ -259,11 +257,10 @@ function updateLanguageUI() {
     }
   });
 
-  // Re-render dynamic components
-  if (document.getElementById('viewDashboard').classList.contains('active')) {
+  if (document.getElementById('viewDashboard')?.classList.contains('active')) {
     loadDashboardStats();
   }
-  if (document.getElementById('viewRegistry').classList.contains('active')) {
+  if (document.getElementById('viewRegistry')?.classList.contains('active')) {
     fetchFilteredFarmers();
   }
 }
@@ -312,7 +309,7 @@ async function checkAuthStatus() {
     return false;
   }
   try {
-    const res = await fetch(`${AUTH_BASE}/me`, { headers: getAuthHeaders() });
+    const res = await fetch(`${AUTH_BASE}/verify`, { headers: getAuthHeaders() });
     const data = await res.json();
     if (data.authenticated) {
       updateAuthUI(true, data.username || data.user?.username || 'Admin');
@@ -393,7 +390,7 @@ async function handleAdminLogin(event) {
 
     // Reload active records and statistics
     loadDashboardStats();
-    if (document.getElementById('viewRegistry').classList.contains('active')) {
+    if (document.getElementById('viewRegistry')?.classList.contains('active')) {
       fetchFilteredFarmers();
     }
 
@@ -424,11 +421,6 @@ async function handleProtectedNavigation(targetView) {
   if (authed) {
     switchView(targetView);
   } else {
-    openLoginModal(() => {
-      switchView(targetView);
-    });
-  }
-} else {
     openLoginModal(() => {
       switchView(targetView);
     });
@@ -785,7 +777,8 @@ function toggleTableSort(column) {
   } else if (column === 'area') {
     registryState.sortBy = current === 'area_desc' ? 'date_desc' : 'area_desc';
   }
-  document.getElementById('sortBySelect').value = registryState.sortBy;
+  const sortSelect = document.getElementById('sortBySelect');
+  if (sortSelect) sortSelect.value = registryState.sortBy;
   fetchFilteredFarmers();
 }
 
@@ -838,11 +831,16 @@ function resetAllFilters() {
   registryState.sortBy = 'date_desc';
   registryState.page = 1;
 
-  document.getElementById('registrySearchInput').value = '';
-  document.getElementById('clearSearchBtn').style.display = 'none';
-  document.getElementById('villageFilterSelect').value = '';
-  document.getElementById('statusFilterSelect').value = '';
-  document.getElementById('sortBySelect').value = 'date_desc';
+  const searchInp = document.getElementById('registrySearchInput');
+  if (searchInp) searchInp.value = '';
+  const clearBtn = document.getElementById('clearSearchBtn');
+  if (clearBtn) clearBtn.style.display = 'none';
+  const vFilter = document.getElementById('villageFilterSelect');
+  if (vFilter) vFilter.value = '';
+  const sFilter = document.getElementById('statusFilterSelect');
+  if (sFilter) sFilter.value = '';
+  const sortSel = document.getElementById('sortBySelect');
+  if (sortSel) sortSel.value = 'date_desc';
 
   fetchFilteredFarmers();
 }
@@ -919,8 +917,8 @@ async function loadFarmerIntoStudio(id) {
   try {
     const res = await fetch(`${API_BASE}/${id}`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Failed to load farmer details');
-    const f = await res.json();
-    populateStudioWithFarmer(f);
+    const data = await res.json();
+    populateStudioWithFarmer(data.farmer || data);
     switchView('studio');
   } catch (err) {
     alert('Error loading farmer: ' + err.message);
@@ -964,8 +962,9 @@ function populateStudioWithFarmer(f) {
     resetPhoto();
   }
 
-  document.getElementById('saveBtn').dataset.editingId = f.id;
-  document.getElementById('saveBtn').innerText = '💾 Update Farmer';
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.dataset.editingId = f.id;
+  saveBtn.innerText = '💾 Update Farmer';
 }
 
 async function saveFarmer() {
@@ -989,7 +988,7 @@ async function saveFarmer() {
   };
 
   const photoEl = document.getElementById('photo');
-  if (photoEl.dataset.custom === 'true') {
+  if (photoEl && photoEl.dataset.custom === 'true') {
     farmerData.photo = photoEl.src;
   }
 
@@ -1154,7 +1153,6 @@ async function handleDownloadCombined() {
     const imgDataFront = canvasFront.toDataURL('image/png');
     const imgDataBack = canvasBack.toDataURL('image/png');
 
-    // Standard CR-80 proportion rendered centered on A4
     pdf.addImage(imgDataFront, 'PNG', 35, 30, 140, 88.2);
     pdf.addImage(imgDataBack, 'PNG', 35, 130, 140, 88.2);
 
