@@ -6,7 +6,7 @@ const DATA_FILE = path.join(__dirname, 'data', 'farmers.json');
 function ensureDataFile() {
   fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
   if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2));
+    fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2), 'utf8');
   }
 }
 
@@ -23,13 +23,22 @@ function readFarmers() {
 
 function writeFarmers(farmers) {
   ensureDataFile();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(farmers, null, 2));
+  fs.writeFileSync(DATA_FILE, JSON.stringify(farmers, null, 2), 'utf8');
 }
 
 function formatAadhaar(value) {
   const digits = String(value || '').replace(/\D/g, '').slice(0, 12);
   if (!digits) return '';
   return digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+}
+
+function maskAadhaar(value) {
+  const formatted = formatAadhaar(value);
+  const parts = formatted.split(' ');
+  if (parts.length === 3 && parts[2].length === 4) {
+    return `XXXX XXXX ${parts[2]}`;
+  }
+  return formatted ? 'XXXX XXXX ' + formatted.slice(-4).trim() : 'XXXX XXXX XXXX';
 }
 
 function generateCardNumber(existing = []) {
@@ -44,7 +53,9 @@ function generateCardNumber(existing = []) {
 function normalizeFarmerData(input = {}) {
   const base = {
     farmerName: '',
+    farmerNameMr: '',
     fatherName: '',
+    fatherNameMr: '',
     address: '',
     village: '',
     survey: '',
@@ -61,7 +72,9 @@ function normalizeFarmerData(input = {}) {
     ...base,
     ...input,
     farmerName: String(input.farmerName || '').trim(),
+    farmerNameMr: String(input.farmerNameMr || '').trim(),
     fatherName: String(input.fatherName || '').trim(),
+    fatherNameMr: String(input.fatherNameMr || '').trim(),
     address: String(input.address || '').trim(),
     village: String(input.village || '').trim(),
     survey: String(input.survey || '').trim(),
@@ -93,14 +106,65 @@ function validateFarmerData(input = {}) {
   return { ok: errors.length === 0, errors, data };
 }
 
-function createApp() {
+function getStats() {
+  const farmers = readFarmers();
+  const uniqueVillages = new Set(farmers.map((f) => (f.village || '').toLowerCase()).filter(Boolean));
+  const totalArea = farmers.reduce((sum, f) => sum + (parseFloat(f.area) || 0), 0);
+
+  return {
+    totalFarmers: farmers.length,
+    activeFarmers: farmers.filter((f) => f.status === 'active').length,
+    totalVillages: uniqueVillages.size,
+    totalAreaHectare: Number(totalArea.toFixed(2))
+  };
+}
+
+function exportToCSV(farmers) {
+  const headers = ['ID', 'Card Number', 'Farmer Name (EN)', 'Farmer Name (MR)', 'Father Name (EN)', 'Father Name (MR)', 'Village', 'Address', 'Aadhaar', 'Survey', 'Sub Survey', 'Area (Ha)', 'Status', 'Created At'];
+  const rows = farmers.map((f) => [
+    `"${f.id || ''}"`,
+    `"${f.cardNumber || ''}"`,
+    `"${(f.farmerName || '').replace(/"/g, '""')}"`,
+    `"${(f.farmerNameMr || '').replace(/"/g, '""')}"`,
+    `"${(f.fatherName || '').replace(/"/g, '""')}"`,
+    `"${(f.fatherNameMr || '').replace(/"/g, '""')}"`,
+    `"${(f.village || '').replace(/"/g, '""')}"`,
+    `"${(f.address || '').replace(/"/g, '""')}"`,
+    `"${f.aadhaar || ''}"`,
+    `"${f.survey || ''}"`,
+    `"${f.subSurvey || ''}"`,
+    `"${f.area || '0'}"`,
+    `"${f.status || 'active'}"`,
+    `"${f.createdAt || ''}"`
+  ]);
+
+  return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+}
+
+function createApp(options = {}) {
   const express = require('express');
   const app = express();
 
   app.use(express.json({ limit: '5mb' }));
 
+  if (options.serveStatic !== false) {
+    app.use(express.static(__dirname));
+  }
+
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', app: 'kisan-card-api' });
+  });
+
+  app.get('/api/stats', (_req, res) => {
+    res.json({ stats: getStats() });
+  });
+
+  app.get('/api/farmers/export/csv', (_req, res) => {
+    const farmers = readFarmers();
+    const csv = exportToCSV(farmers);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename=kisan_card_farmers.csv');
+    res.send(csv);
   });
 
   app.get('/api/farmers', (_req, res) => {
@@ -188,14 +252,16 @@ module.exports = {
   normalizeFarmerData,
   validateFarmerData,
   formatAadhaar,
+  maskAadhaar,
   generateCardNumber,
   readFarmers,
-  writeFarmers
+  writeFarmers,
+  getStats,
+  exportToCSV
 };
 
 if (require.main === module) {
-  const express = require('express');
-  const app = createApp();
+  const app = createApp({ serveStatic: true });
   const port = process.env.PORT || 3000;
   app.listen(port, () => {
     console.log(`Kisan Card API running on http://localhost:${port}`);

@@ -1,62 +1,87 @@
-# Kisan Card
+﻿# 🌱 Kisan Card Studio
 
-A lightweight browser-based Kisan Card generator for creating, saving, and printing farmer identity cards.
+> **AgriStack – Farmer Identity & Card Generation System**
 
-## Features
+A modern web application and backend API for generating, previewing, managing, and exporting official Kisan Cards (Agricultural Identity Cards) with live bilingual translation (English + Marathi / मराठी), live card preview, dual-sided PDF generation, camera capture, and CSV data export.
 
-- Live card preview while entering farmer details
-- English and Marathi name fields with auto-translation
-- Aadhaar number formatting and validation
-- Land details including village, survey, sub-survey, and area
-- Dynamic farmer image upload with remove option
-- QR code on the back card linked to the card number
-- Form validation for required fields before download/print
-- Save farmers to the API and load them back
-- Saved farmers panel with load and delete actions
-- Download the front card as a PDF
-- Print-friendly card layout
-- Responsive design for desktop and mobile screens
+---
 
-## Run Locally
+## ✨ Features
 
-1. Install dependencies with `npm install`.
-2. Start the server with `npm start`.
-3. Open `http://localhost:3000` in your browser.
-4. Enter the farmer details in the form.
-5. Use **Save Farmer** to store the record.
-6. Use **Download PDF** or **Print Card** when finished.
+- **📇 Live Dynamic Card Generation**:
+  - Live synchronized preview for both Front and Back of the CR-80 standard card (85.6mm × 54mm).
+  - High-resolution SVG national emblem and leaf graphic styling.
+  - QR Code integration embedding farmer identity and digital verification URL.
 
-## API Endpoints
+- **🌐 Live Marathi Translation**:
+  - Automatic English-to-Marathi transliteration & translation for Farmer Name and Father's Name as you type.
+
+- **🔒 Aadhaar Privacy Masking**:
+  - UIDAI-compliant privacy toggle (XXXX XXXX 1234 masking) on cards and preview.
+
+- **📷 Multi-Source Photo Input**:
+  - Upload photos from local filesystem or capture directly using laptop/mobile webcam.
+
+- **📥 Dual-Sided PDF & Print Layout**:
+  - Export **Dual-Sided (Front + Back)** combined PDF document.
+  - Single-click **Front PDF**, **Back PDF**, and clean browser print integration.
+
+- **📊 Statistics & CSV Export**:
+  - Real-time top bar metrics (Total Registered Farmers, Villages Covered, Total Land in Hectares).
+  - One-click CSV export of all registered farmers for record-keeping and agricultural census.
+
+- **💾 CRUD Operations & Local Persistence**:
+  - Full REST API with validation, card numbering (KC-1001, KC-1002, ...), search filtering, edit, and deletion.
+
+---
+
+## 🚀 Quickstart
+
+### 1. Install Dependencies
+`ash
+npm install
+`
+
+### 2. Start the Server
+`ash
+npm start
+`
+The server will start on **http://localhost:3000**.
+
+### 3. Run Automated Tests
+`ash
+npm test
+`
+*(Runs 24 automated unit and API integration tests with Node.js test runner)*
+
+---
+
+## 🔌 API Endpoints
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| GET | `/api/farmers` | List all farmers |
-| GET | `/api/farmers/:id` | Get a single farmer |
-| POST | `/api/farmers` | Create a new farmer |
-| PUT | `/api/farmers/:id` | Update a farmer |
-| DELETE | `/api/farmers/:id` | Delete a farmer |
+|---|---|---|
+| GET | /health | API health check status |
+| GET | /api/stats | Summary statistics (total farmers, villages, area) |
+| GET | /api/farmers | List all registered farmers |
+| GET | /api/farmers/:id | Get details for a specific farmer |
+| POST | /api/farmers | Register a new farmer |
+| PUT | /api/farmers/:id | Update existing farmer details |
+| DELETE | /api/farmers/:id | Delete a farmer record |
+| GET | /api/farmers/export/csv | Download complete farmer registry as .csv |
 
-The name translation fields use the Google Translate endpoint and require an internet connection. PDF generation also loads `html2pdf.js` from a CDN.
+---
 
-## Tests
+## 🛠️ Tech Stack
 
-Run the test suite:
+- **Frontend**: HTML5, CSS3 (Modern Grid & Flexbox), Vanilla JavaScript (ES6+)
+- **Typography**: DM Sans, Noto Sans Devanagari, Space Grotesk
+- **Backend**: Node.js, Express.js
+- **PDF Generation**: html2pdf.js
+- **Testing**: Node.js Built-in Test Runner (
+ode:test, 
+ode:assert/strict)
 
-```bash
-node --test
-```
+---
 
-## Project Files
-
-- `index.html` – Page structure, form fields, and card markup
-- `style.css` – Responsive layout, card design, validation styles, and print styles
-- `script.js` – Live updates, image handling, translation, validation, API integration, PDF download, and printing
-- `api.js` – Express API for managing farmer records with file-based storage
-- `server.js` – Starts the API server and serves static frontend files
-- `farmer-placeholder.svg` – Default image shown before a photo is uploaded
-- `tests/api.test.js` – Comprehensive API and utility function tests
-
-## Repository
-
-https://github.com/maheshkumbhar2005/kisan-card
+## 📄 License
+MIT License

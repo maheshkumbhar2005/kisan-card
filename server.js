@@ -1,12 +1,18 @@
-const path = require('node:path');
 const { createApp } = require('./api');
 
-const app = createApp();
+const app = createApp({ serveStatic: true });
 const port = process.env.PORT || 3000;
 
-// Serve frontend static files
-app.use(require('express').static(path.join(__dirname)));
+process.on('uncaughtException', (err) => {
+  console.error('Server Uncaught Exception:', err);
+});
 
-app.listen(port, () => {
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Server Unhandled Rejection:', reason);
+});
+
+const server = app.listen(port, () => {
   console.log(`Kisan Card running on http://localhost:${port}`);
 });
+
+

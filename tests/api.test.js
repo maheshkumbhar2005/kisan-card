@@ -1,26 +1,22 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-
 const {
   createApp,
   normalizeFarmerData,
   validateFarmerData,
   formatAadhaar,
-  generateCardNumber
+  maskAadhaar,
+  generateCardNumber,
+  getStats,
+  exportToCSV
 } = require('../api');
-
-// ---------------------------------------------------------------------------
-// Utility function tests
-// ---------------------------------------------------------------------------
 
 test('formatAadhaar formats 12 digits with spaces', () => {
   assert.equal(formatAadhaar('123456789012'), '1234 5678 9012');
 });
 
 test('formatAadhaar handles short input', () => {
-  assert.equal(formatAadhaar('1234'), '1234');
+  assert.equal(formatAadhaar('12345'), '1234 5');
 });
 
 test('formatAadhaar strips non-digit characters', () => {
@@ -31,6 +27,11 @@ test('formatAadhaar returns empty string for empty input', () => {
   assert.equal(formatAadhaar(''), '');
   assert.equal(formatAadhaar(null), '');
   assert.equal(formatAadhaar(undefined), '');
+});
+
+test('maskAadhaar masks first 8 digits', () => {
+  assert.equal(maskAadhaar('123456789012'), 'XXXX XXXX 9012');
+  assert.equal(maskAadhaar('1234 5678 9012'), 'XXXX XXXX 9012');
 });
 
 test('generateCardNumber returns KC-1001 for empty list', () => {
@@ -44,10 +45,6 @@ test('generateCardNumber increments from highest existing number', () => {
   ];
   assert.equal(generateCardNumber(existing), 'KC-1006');
 });
-
-// ---------------------------------------------------------------------------
-// normalizeFarmerData tests
-// ---------------------------------------------------------------------------
 
 test('normalizeFarmerData fills defaults and formats values', () => {
   const data = normalizeFarmerData({
@@ -82,10 +79,6 @@ test('normalizeFarmerData accepts aadhaarNumber alias', () => {
   assert.equal(data.aadhaar, '1111 2222 3333');
 });
 
-// ---------------------------------------------------------------------------
-// validateFarmerData tests
-// ---------------------------------------------------------------------------
-
 test('validateFarmerData rejects missing required fields', () => {
   const result = validateFarmerData({
     farmerName: '',
@@ -105,7 +98,7 @@ test('validateFarmerData rejects missing village and address', () => {
 
   assert.equal(result.ok, false);
   assert.ok(result.errors.some((err) => err.includes('village')));
-  assert.ok(result.errors.some((err) => err.includes('address')));
+  assert.equal(result.errors.some((err) => err.includes('address')), true);
 });
 
 test('validateFarmerData passes with all required fields', () => {
@@ -120,19 +113,25 @@ test('validateFarmerData passes with all required fields', () => {
   assert.equal(result.errors.length, 0);
 });
 
-// ---------------------------------------------------------------------------
-// API endpoint tests
-// ---------------------------------------------------------------------------
+test('exportToCSV generates valid CSV string', () => {
+  const farmers = [
+    { id: 1, cardNumber: 'KC-1001', farmerName: 'Ramesh', fatherName: 'Suresh', village: 'Takarkheda', area: '1.5' }
+  ];
+  const csv = exportToCSV(farmers);
+  assert.ok(csv.includes('Farmer Name (EN)'));
+  assert.ok(csv.includes('Ramesh'));
+  assert.ok(csv.includes('KC-1001'));
+});
 
 test('GET /health returns ok', async () => {
-  const app = createApp();
+  const app = createApp({ serveStatic: false });
   const server = app.listen(0);
 
   try {
     const { port } = server.address();
-    const base = `http://127.0.0.1:${port}`;
+    const base = 'http://127.0.0.1:' + port;
 
-    const res = await fetch(`${base}/health`);
+    const res = await fetch(base + '/health');
     assert.equal(res.status, 200);
 
     const json = await res.json();
@@ -143,13 +142,46 @@ test('GET /health returns ok', async () => {
   }
 });
 
-test('GET /api/farmers returns a list', async () => {
-  const app = createApp();
+test('GET /api/stats returns system statistics', async () => {
+  const app = createApp({ serveStatic: false });
   const server = app.listen(0);
 
   try {
     const { port } = server.address();
-    const res = await fetch(`http://127.0.0.1:${port}/api/farmers`);
+    const res = await fetch('http://127.0.0.1:' + port + '/api/stats');
+    assert.equal(res.status, 200);
+
+    const json = await res.json();
+    assert.ok(typeof json.stats.totalFarmers === 'number');
+    assert.ok(typeof json.stats.totalVillages === 'number');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('GET /api/farmers/export/csv returns CSV file', async () => {
+  const app = createApp({ serveStatic: false });
+  const server = app.listen(0);
+
+  try {
+    const { port } = server.address();
+    const res = await fetch('http://127.0.0.1:' + port + '/api/farmers/export/csv');
+    assert.equal(res.status, 200);
+    assert.ok(res.headers.get('content-type').includes('text/csv'));
+    const text = await res.text();
+    assert.ok(text.includes("Card Number"));
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('GET /api/farmers returns a list', async () => {
+  const app = createApp({ serveStatic: false });
+  const server = app.listen(0);
+
+  try {
+    const { port } = server.address();
+    const res = await fetch('http://127.0.0.1:' + port + '/api/farmers');
     assert.equal(res.status, 200);
 
     const json = await res.json();
@@ -160,14 +192,14 @@ test('GET /api/farmers returns a list', async () => {
 });
 
 test('POST /api/farmers creates a farmer', async () => {
-  const app = createApp();
+  const app = createApp({ serveStatic: false });
   const server = app.listen(0);
 
   try {
     const { port } = server.address();
-    const base = `http://127.0.0.1:${port}`;
+    const base = 'http://127.0.0.1:' + port;
 
-    const res = await fetch(`${base}/api/farmers`, {
+    const res = await fetch(base + '/api/farmers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -189,12 +221,12 @@ test('POST /api/farmers creates a farmer', async () => {
 });
 
 test('POST /api/farmers rejects missing required fields', async () => {
-  const app = createApp();
+  const app = createApp({ serveStatic: false });
   const server = app.listen(0);
 
   try {
     const { port } = server.address();
-    const res = await fetch(`http://127.0.0.1:${port}/api/farmers`, {
+    const res = await fetch('http://127.0.0.1:' + port + '/api/farmers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ farmerName: '' })
@@ -210,12 +242,12 @@ test('POST /api/farmers rejects missing required fields', async () => {
 });
 
 test('GET /api/farmers/:id returns 404 for non-existent farmer', async () => {
-  const app = createApp();
+  const app = createApp({ serveStatic: false });
   const server = app.listen(0);
 
   try {
     const { port } = server.address();
-    const res = await fetch(`http://127.0.0.1:${port}/api/farmers/999999`);
+    const res = await fetch('http://127.0.0.1:' + port + '/api/farmers/999999');
     assert.equal(res.status, 404);
   } finally {
     await new Promise((resolve) => server.close(resolve));
@@ -223,12 +255,12 @@ test('GET /api/farmers/:id returns 404 for non-existent farmer', async () => {
 });
 
 test('PUT /api/farmers/:id returns 404 for non-existent farmer', async () => {
-  const app = createApp();
+  const app = createApp({ serveStatic: false });
   const server = app.listen(0);
 
   try {
     const { port } = server.address();
-    const res = await fetch(`http://127.0.0.1:${port}/api/farmers/999999`, {
+    const res = await fetch('http://127.0.0.1:' + port + '/api/farmers/999999', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ farmerName: 'Updated' })
@@ -241,12 +273,12 @@ test('PUT /api/farmers/:id returns 404 for non-existent farmer', async () => {
 });
 
 test('DELETE /api/farmers/:id returns 404 for non-existent farmer', async () => {
-  const app = createApp();
+  const app = createApp({ serveStatic: false });
   const server = app.listen(0);
 
   try {
     const { port } = server.address();
-    const res = await fetch(`http://127.0.0.1:${port}/api/farmers/999999`, {
+    const res = await fetch('http://127.0.0.1:' + port + '/api/farmers/999999', {
       method: 'DELETE'
     });
 
@@ -257,15 +289,14 @@ test('DELETE /api/farmers/:id returns 404 for non-existent farmer', async () => 
 });
 
 test('Full CRUD lifecycle: create, read, update, delete', async () => {
-  const app = createApp();
+  const app = createApp({ serveStatic: false });
   const server = app.listen(0);
 
   try {
     const { port } = server.address();
-    const base = `http://127.0.0.1:${port}`;
+    const base = 'http://127.0.0.1:' + port;
 
-    // Create
-    const createRes = await fetch(`${base}/api/farmers`, {
+    const createRes = await fetch(base + '/api/farmers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -279,14 +310,12 @@ test('Full CRUD lifecycle: create, read, update, delete', async () => {
     const { farmer } = await createRes.json();
     const id = farmer.id;
 
-    // Read
-    const readRes = await fetch(`${base}/api/farmers/${id}`);
+    const readRes = await fetch(base + '/api/farmers/' + id);
     assert.equal(readRes.status, 200);
     const readJson = await readRes.json();
     assert.equal(readJson.farmer.farmerName, 'Ganesh');
 
-    // Update
-    const updateRes = await fetch(`${base}/api/farmers/${id}`, {
+    const updateRes = await fetch(base + '/api/farmers/' + id, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ farmerName: 'Ganesh Patil' })
@@ -295,16 +324,14 @@ test('Full CRUD lifecycle: create, read, update, delete', async () => {
     const updateJson = await updateRes.json();
     assert.equal(updateJson.farmer.farmerName, 'Ganesh Patil');
 
-    // Delete
-    const deleteRes = await fetch(`${base}/api/farmers/${id}`, {
+    const deleteRes = await fetch(base + '/api/farmers/' + id, {
       method: 'DELETE'
     });
     assert.equal(deleteRes.status, 200);
     const deleteJson = await deleteRes.json();
     assert.equal(deleteJson.success, true);
 
-    // Verify deleted
-    const verifyRes = await fetch(`${base}/api/farmers/${id}`);
+    const verifyRes = await fetch(base + '/api/farmers/' + id);
     assert.equal(verifyRes.status, 404);
   } finally {
     await new Promise((resolve) => server.close(resolve));
