@@ -1206,3 +1206,52 @@ function switchMobileCardFace(face) {
     if (btnBoth) btnBoth.classList.add('active');
   }
 }
+
+async function exportBackup() {
+  if (!authState.isAuthenticated) {
+    openLoginModal('registry');
+    return;
+  }
+  window.location.href = `/api/backup/export?token=${encodeURIComponent(authState.token)}`;
+}
+
+async function handleRestoreFile(event) {
+  if (!authState.isAuthenticated) {
+    openLoginModal('registry');
+    return;
+  }
+
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (!confirm(`Are you sure you want to restore records from "${file.name}"? This will import all valid farmer records.`)) {
+    event.target.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async function () {
+    try {
+      const parsed = JSON.parse(reader.result);
+      const payload = Array.isArray(parsed) ? { farmers: parsed } : parsed;
+
+      const res = await fetch('/api/backup/restore', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Restore failed');
+
+      alert(`✅ Database restored successfully! ${data.restoredCount} records loaded.`);
+      loadDashboardStats();
+      fetchFilteredFarmers();
+    } catch (err) {
+      alert('❌ Failed to restore database: ' + err.message);
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+}

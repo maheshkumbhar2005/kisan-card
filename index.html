@@ -478,7 +478,10 @@
                   ☰ Table
                 </button>
               </div>
-              <button class="btn btn-sm btn-outline" onclick="exportCSV()">📥 Export CSV</button>
+              <button class="btn btn-sm btn-outline" onclick="exportCSV()">📥 CSV</button>
+              <button class="btn btn-sm btn-outline" onclick="exportBackup()">💾 Backup</button>
+              <button class="btn btn-sm btn-outline" onclick="document.getElementById('restoreFileInput').click()">🔄 Restore</button>
+              <input type="file" id="restoreFileInput" accept=".json" style="display:none;" onchange="handleRestoreFile(event)" />
               <button class="btn btn-sm btn-primary" onclick="handleProtectedNavigation('studio'); clearForm();">➕ Add Farmer</button>
             </div>
           </div>

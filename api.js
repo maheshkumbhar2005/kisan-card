@@ -1,33 +1,218 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { DatabaseSync } = require('node:sqlite');
 
-const DATA_FILE = path.join(__dirname, 'data', 'farmers.json');
+const DATA_DIR = path.join(__dirname, 'data');
+const DB_FILE = path.join(DATA_DIR, 'kisan_cards.db');
+const JSON_FILE = path.join(DATA_DIR, 'farmers.json');
 const SECRET_KEY = process.env.JWT_SECRET || 'kisan-card-super-secret-admin-key-2026';
 const ADMIN_USER = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASSWORD || 'admin123';
 
-function ensureDataFile() {
-  fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
-  if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2), 'utf8');
+// Ensure data directory
+fs.mkdirSync(DATA_DIR, { recursive: true });
+
+// Initialize SQLite Database
+let dbInstance = null;
+
+function getDB(customPath) {
+  if (customPath) {
+    const db = new DatabaseSync(customPath);
+    initSchema(db);
+    return db;
   }
+  if (!dbInstance) {
+    dbInstance = new DatabaseSync(DB_FILE);
+    initSchema(dbInstance);
+    migrateJsonIfEmpty(dbInstance);
+  }
+  return dbInstance;
 }
 
-function readFarmers() {
-  ensureDataFile();
-  const raw = fs.readFileSync(DATA_FILE, 'utf8');
+function initSchema(db) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS farmers (
+      id INTEGER PRIMARY KEY,
+      cardNumber TEXT UNIQUE NOT NULL,
+      farmerName TEXT NOT NULL,
+      farmerNameMr TEXT DEFAULT '',
+      fatherName TEXT NOT NULL,
+      fatherNameMr TEXT DEFAULT '',
+      village TEXT NOT NULL,
+      address TEXT NOT NULL,
+      survey TEXT DEFAULT '',
+      subSurvey TEXT DEFAULT '',
+      area TEXT DEFAULT '0',
+      aadhaar TEXT DEFAULT '',
+      status TEXT DEFAULT 'active',
+      photo TEXT DEFAULT '',
+      createdAt TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_farmers_cardNumber ON farmers(cardNumber);
+    CREATE INDEX IF NOT EXISTS idx_farmers_village ON farmers(village);
+    CREATE INDEX IF NOT EXISTS idx_farmers_status ON farmers(status);
+  `);
+}
+
+function migrateJsonIfEmpty(db) {
   try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    return [];
+    const countRow = db.prepare('SELECT COUNT(*) as count FROM farmers').get();
+    if (countRow.count === 0 && fs.existsSync(JSON_FILE)) {
+      const raw = fs.readFileSync(JSON_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const insert = db.prepare(`
+          INSERT INTO farmers (id, cardNumber, farmerName, farmerNameMr, fatherName, fatherNameMr, village, address, survey, subSurvey, area, aadhaar, status, photo, createdAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        for (const f of parsed) {
+          const norm = normalizeFarmerData(f);
+          insert.run(
+            Number(f.id) || Date.now(),
+            norm.cardNumber,
+            norm.farmerName,
+            norm.farmerNameMr,
+            norm.fatherName,
+            norm.fatherNameMr,
+            norm.village,
+            norm.address,
+            norm.survey,
+            norm.subSurvey,
+            norm.area,
+            norm.aadhaar,
+            norm.status,
+            norm.photo,
+            norm.createdAt
+          );
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Migration error:', err);
   }
 }
 
-function writeFarmers(farmers) {
-  ensureDataFile();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(farmers, null, 2), 'utf8');
+// ----------------------------------------------------
+// DATABASE ACCESS HELPERS
+// ----------------------------------------------------
+
+function readAllFarmers(db = getDB()) {
+  const rows = db.prepare('SELECT * FROM farmers ORDER BY id DESC').all();
+  return rows.map((r) => ({ ...r, id: Number(r.id) }));
+}
+
+function getFarmerById(id, db = getDB()) {
+  const row = db.prepare('SELECT * FROM farmers WHERE id = ?').get(id);
+  return row ? { ...row, id: Number(row.id) } : null;
+}
+
+function getFarmerByCardNumber(cardNumber, db = getDB()) {
+  const cardId = String(cardNumber || '').trim().toUpperCase();
+  const row = db.prepare('SELECT * FROM farmers WHERE UPPER(cardNumber) = ? OR CAST(id AS TEXT) = ?').get(cardId, cardId);
+  return row ? { ...row, id: Number(row.id) } : null;
+}
+
+function insertFarmer(farmer, db = getDB()) {
+  const insert = db.prepare(`
+    INSERT INTO farmers (id, cardNumber, farmerName, farmerNameMr, fatherName, fatherNameMr, village, address, survey, subSurvey, area, aadhaar, status, photo, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  insert.run(
+    farmer.id,
+    farmer.cardNumber,
+    farmer.farmerName,
+    farmer.farmerNameMr,
+    farmer.fatherName,
+    farmer.fatherNameMr,
+    farmer.village,
+    farmer.address,
+    farmer.survey,
+    farmer.subSurvey,
+    farmer.area,
+    farmer.aadhaar,
+    farmer.status,
+    farmer.photo,
+    farmer.createdAt
+  );
+  return farmer;
+}
+
+function updateFarmerInDB(id, farmer, db = getDB()) {
+  const update = db.prepare(`
+    UPDATE farmers SET
+      farmerName = ?,
+      farmerNameMr = ?,
+      fatherName = ?,
+      fatherNameMr = ?,
+      village = ?,
+      address = ?,
+      survey = ?,
+      subSurvey = ?,
+      area = ?,
+      aadhaar = ?,
+      status = ?,
+      photo = ?
+    WHERE id = ?
+  `);
+  const result = update.run(
+    farmer.farmerName,
+    farmer.farmerNameMr,
+    farmer.fatherName,
+    farmer.fatherNameMr,
+    farmer.village,
+    farmer.address,
+    farmer.survey,
+    farmer.subSurvey,
+    farmer.area,
+    farmer.aadhaar,
+    farmer.status,
+    farmer.photo,
+    id
+  );
+  return result.changes > 0 ? farmer : null;
+}
+
+function deleteFarmerFromDB(id, db = getDB()) {
+  const del = db.prepare('DELETE FROM farmers WHERE id = ?');
+  const result = del.run(id);
+  return result.changes > 0;
+}
+
+// ----------------------------------------------------
+// RATE LIMITING MIDDLEWARE
+// ----------------------------------------------------
+
+const rateLimitStore = new Map();
+
+function rateLimit(options = {}) {
+  const windowMs = options.windowMs || 5 * 60 * 1000; // 5 minutes
+  const max = options.max || 200; // max requests
+  const message = options.message || 'Too many requests from this client. Please try again later.';
+
+  return (req, res, next) => {
+    const key = req.ip || req.socket.remoteAddress || '127.0.0.1';
+    const now = Date.now();
+    const record = rateLimitStore.get(key) || { count: 0, resetTime: now + windowMs };
+
+    if (now > record.resetTime) {
+      record.count = 0;
+      record.resetTime = now + windowMs;
+    }
+
+    record.count += 1;
+    rateLimitStore.set(key, record);
+
+    if (record.count > max) {
+      return res.status(429).json({
+        error: message,
+        code: 'RATE_LIMIT_EXCEEDED',
+        retryAfter: Math.ceil((record.resetTime - now) / 1000)
+      });
+    }
+
+    next();
+  };
 }
 
 // ----------------------------------------------------
@@ -53,7 +238,7 @@ function verifyToken(token) {
   try {
     const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
     if (payload.exp && Date.now() > payload.exp) {
-      return null; // Expired
+      return null;
     }
     return payload;
   } catch (err) {
@@ -74,7 +259,7 @@ function authMiddleware(req, res, next) {
   const user = verifyToken(token);
   if (!user) {
     return res.status(401).json({
-      error: 'Unauthorized. Admin authentication required.',
+      error: 'Unauthorized. Administrator credentials required.',
       code: 'AUTH_REQUIRED'
     });
   }
@@ -139,7 +324,7 @@ function normalizeFarmerData(input = {}) {
     area: String(input.area || '').trim(),
     aadhaar: formatAadhaar(input.aadhaar || input.aadhaarNumber || ''),
     cardNumber: String(input.cardNumber || '').trim() || '',
-    status: String(input.status || 'active').trim() || 'active',
+    status: String(input.status || 'active').trim().toLowerCase() === 'inactive' ? 'inactive' : 'active',
     photo: String(input.photo || '').trim(),
     createdAt: input.createdAt || new Date().toISOString()
   };
@@ -151,14 +336,57 @@ function normalizeFarmerData(input = {}) {
   return normalized;
 }
 
+// ----------------------------------------------------
+// ROBUST VALIDATION ENGINE
+// ----------------------------------------------------
+
 function validateFarmerData(input = {}) {
   const errors = [];
   const data = normalizeFarmerData(input);
 
-  if (!data.farmerName) errors.push('farmerName is required');
-  if (!data.fatherName) errors.push('fatherName is required');
-  if (!data.village) errors.push('village is required');
-  if (!data.address) errors.push('address is required');
+  // 1. Farmer Name
+  if (!data.farmerName) {
+    errors.push('Farmer Name is required.');
+  } else if (data.farmerName.length < 2 || data.farmerName.length > 100) {
+    errors.push('Farmer Name must be between 2 and 100 characters.');
+  }
+
+  // 2. Father Name
+  if (!data.fatherName) {
+    errors.push("Father's Name is required.");
+  } else if (data.fatherName.length < 2 || data.fatherName.length > 100) {
+    errors.push("Father's Name must be between 2 and 100 characters.");
+  }
+
+  // 3. Village
+  if (!data.village) {
+    errors.push('Village name is required.');
+  } else if (data.village.length < 2 || data.village.length > 100) {
+    errors.push('Village name must be between 2 and 100 characters.');
+  }
+
+  // 4. Address
+  if (!data.address) {
+    errors.push('Address is required.');
+  } else if (data.address.length < 3 || data.address.length > 255) {
+    errors.push('Address must be between 3 and 255 characters.');
+  }
+
+  // 5. Land Area
+  if (data.area) {
+    const areaNum = parseFloat(data.area);
+    if (isNaN(areaNum) || areaNum < 0 || areaNum > 10000) {
+      errors.push('Land area must be a valid positive number up to 10,000 Hectares.');
+    }
+  }
+
+  // 6. Aadhaar (if provided, must have 12 digits)
+  if (data.aadhaar) {
+    const digits = data.aadhaar.replace(/\s/g, '');
+    if (!/^\d{12}$/.test(digits)) {
+      errors.push('Aadhaar number must contain exactly 12 digits.');
+    }
+  }
 
   return { ok: errors.length === 0, errors, data };
 }
@@ -188,7 +416,7 @@ function sanitizeForVerification(farmer) {
 function queryFarmers(allFarmers, query = {}) {
   let result = [...allFarmers];
 
-  // 1. Search Query (Name in EN/MR, Father in EN/MR, Village, Card Number, Survey, Aadhaar)
+  // 1. Search Query
   const searchTerm = String(query.search || query.q || '').trim().toLowerCase();
   if (searchTerm) {
     result = result.filter((f) => {
@@ -227,7 +455,6 @@ function queryFarmers(allFarmers, query = {}) {
     result = result.filter((f) => String(f.status || 'active').trim().toLowerCase() === statusFilter);
   }
 
-  // Extract unique villages from allFarmers
   const uniqueVillages = Array.from(
     new Set(allFarmers.map((f) => String(f.village || '').trim()).filter(Boolean))
   ).sort((a, b) => a.localeCompare(b));
@@ -300,8 +527,8 @@ function queryFarmers(allFarmers, query = {}) {
   };
 }
 
-function getStats() {
-  const farmers = readFarmers();
+function getStats(db = getDB()) {
+  const farmers = readAllFarmers(db);
   const totalFarmers = farmers.length;
   const activeFarmers = farmers.filter((f) => f.status === 'active').length;
   const inactiveFarmers = totalFarmers - activeFarmers;
@@ -347,7 +574,6 @@ function getStats() {
 
   const avgAreaHectare = totalFarmers > 0 ? Number((totalArea / totalFarmers).toFixed(2)) : 0;
 
-  // Mask sensitive Aadhaar in public recent registrations
   const recentFarmers = [...farmers]
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     .slice(0, 8)
@@ -391,8 +617,15 @@ function exportToCSV(farmers) {
 function createApp(options = {}) {
   const express = require('express');
   const app = express();
+  const db = options.db || (options.dbPath ? getDB(options.dbPath) : getDB());
 
+  // Input Size & Parsing Protection
   app.use(express.json({ limit: '5mb' }));
+
+  // Global Rate Limiting (300 requests per 5 minutes)
+  if (options.rateLimit !== false) {
+    app.use('/api', rateLimit({ windowMs: 5 * 60 * 1000, max: 300 }));
+  }
 
   if (options.serveStatic !== false) {
     app.use(express.static(__dirname));
@@ -400,15 +633,15 @@ function createApp(options = {}) {
 
   // 1. PUBLIC ROUTES
   app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', app: 'kisan-card-api' });
+    res.json({ status: 'ok', app: 'kisan-card-api', database: 'sqlite3' });
   });
 
   app.get('/api/stats', (_req, res) => {
-    res.json({ stats: getStats() });
+    res.json({ stats: getStats(db) });
   });
 
-  // Authentication Endpoints
-  app.post('/api/auth/login', (req, res) => {
+  // Authentication with Login Rate Limiting (15 attempts / 5 mins)
+  app.post('/api/auth/login', rateLimit({ windowMs: 5 * 60 * 1000, max: 15, message: 'Too many login attempts. Please wait 5 minutes.' }), (req, res) => {
     const { username, password } = req.body || {};
     if (username === ADMIN_USER && password === ADMIN_PASS) {
       const token = generateToken({ username, role: 'admin' });
@@ -420,7 +653,8 @@ function createApp(options = {}) {
     }
     return res.status(401).json({
       success: false,
-      error: 'Invalid administrator credentials'
+      error: 'Invalid administrator username or password.',
+      code: 'AUTH_FAILED'
     });
   });
 
@@ -436,18 +670,13 @@ function createApp(options = {}) {
 
   // Public Verification Endpoint
   app.get('/api/verify/:cardNumber', (req, res) => {
-    const cardId = String(req.params.cardNumber || '').trim().toUpperCase();
-    const farmers = readFarmers();
-    const farmer = farmers.find(
-      (f) =>
-        String(f.cardNumber || '').toUpperCase() === cardId ||
-        String(f.id) === cardId
-    );
+    const farmer = getFarmerByCardNumber(req.params.cardNumber, db);
 
     if (!farmer) {
       return res.status(404).json({
         valid: false,
-        error: 'Kisan Card not found. Please verify the ID.',
+        error: 'Kisan Card not found. Please verify the ID number.',
+        code: 'NOT_FOUND',
         verifiedAt: new Date().toISOString()
       });
     }
@@ -461,7 +690,7 @@ function createApp(options = {}) {
 
   // 2. PROTECTED ROUTES (Admin Authentication Required)
   app.get('/api/farmers/export/csv', authMiddleware, (req, res) => {
-    const allFarmers = readFarmers();
+    const allFarmers = readAllFarmers(db);
     const queryResult = queryFarmers(allFarmers, req.query);
     const csv = exportToCSV(queryResult.farmers);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -469,81 +698,154 @@ function createApp(options = {}) {
     res.send(csv);
   });
 
+  // Backup & Restore Endpoints
+  app.get('/api/backup/export', authMiddleware, (_req, res) => {
+    const allFarmers = readAllFarmers(db);
+    const backupData = {
+      version: '2.0.0',
+      exportedAt: new Date().toISOString(),
+      totalRecords: allFarmers.length,
+      farmers: allFarmers
+    };
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="kisan_card_backup_${Date.now()}.json"`);
+    res.json(backupData);
+  });
+
+  app.post('/api/backup/restore', authMiddleware, (req, res) => {
+    const { farmers: incomingFarmers, mode = 'merge' } = req.body || {};
+    if (!Array.isArray(incomingFarmers)) {
+      return res.status(400).json({
+        error: 'Invalid backup format. Expected "farmers" array.',
+        code: 'INVALID_BACKUP'
+      });
+    }
+
+    try {
+      db.exec('BEGIN TRANSACTION');
+      if (mode === 'replace') {
+        db.exec('DELETE FROM farmers');
+      }
+
+      let restoredCount = 0;
+      const insertOrReplace = db.prepare(`
+        INSERT OR REPLACE INTO farmers (id, cardNumber, farmerName, farmerNameMr, fatherName, fatherNameMr, village, address, survey, subSurvey, area, aadhaar, status, photo, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      for (const item of incomingFarmers) {
+        const val = validateFarmerData(item);
+        if (val.ok) {
+          const norm = val.data;
+          const id = Number(item.id) || Date.now() + restoredCount;
+          insertOrReplace.run(
+            id,
+            norm.cardNumber,
+            norm.farmerName,
+            norm.farmerNameMr,
+            norm.fatherName,
+            norm.fatherNameMr,
+            norm.village,
+            norm.address,
+            norm.survey,
+            norm.subSurvey,
+            norm.area,
+            norm.aadhaar,
+            norm.status,
+            norm.photo,
+            norm.createdAt
+          );
+          restoredCount++;
+        }
+      }
+
+      db.exec('COMMIT');
+      return res.json({
+        success: true,
+        restoredCount,
+        message: `Successfully restored ${restoredCount} farmer records.`
+      });
+    } catch (err) {
+      db.exec('ROLLBACK');
+      return res.status(500).json({
+        error: 'Failed to restore database: ' + err.message,
+        code: 'RESTORE_FAILED'
+      });
+    }
+  });
+
   app.get('/api/farmers', authMiddleware, (req, res) => {
-    const allFarmers = readFarmers();
+    const allFarmers = readAllFarmers(db);
     const result = queryFarmers(allFarmers, req.query);
     res.json(result);
   });
 
   app.get('/api/farmers/:id', authMiddleware, (req, res) => {
-    const farmers = readFarmers();
-    const farmer = farmers.find((entry) => String(entry.id) === String(req.params.id));
-
+    const farmer = getFarmerById(req.params.id, db);
     if (!farmer) {
-      return res.status(404).json({ error: 'Farmer not found' });
+      return res.status(404).json({ error: 'Farmer not found', code: 'NOT_FOUND' });
     }
-
     return res.json({ farmer });
   });
 
   app.post('/api/farmers', authMiddleware, (req, res) => {
-    const farmers = readFarmers();
+    const allFarmers = readAllFarmers(db);
     const validation = validateFarmerData(req.body || {});
 
     if (!validation.ok) {
-      return res.status(400).json({ error: 'Validation failed', errors: validation.errors });
+      return res.status(400).json({
+        error: 'Validation failed',
+        code: 'VALIDATION_ERROR',
+        errors: validation.errors
+      });
     }
 
     const farmer = normalizeFarmerData({
       ...validation.data,
       id: Date.now(),
-      cardNumber: validation.data.cardNumber || generateCardNumber(farmers)
+      cardNumber: validation.data.cardNumber || generateCardNumber(allFarmers)
     });
 
-    farmers.push(farmer);
-    writeFarmers(farmers);
+    insertFarmer(farmer, db);
     return res.status(201).json({ farmer });
   });
 
   app.put('/api/farmers/:id', authMiddleware, (req, res) => {
-    const farmers = readFarmers();
-    const index = farmers.findIndex((entry) => String(entry.id) === String(req.params.id));
-
-    if (index === -1) {
-      return res.status(404).json({ error: 'Farmer not found' });
+    const existing = getFarmerById(req.params.id, db);
+    if (!existing) {
+      return res.status(404).json({ error: 'Farmer not found', code: 'NOT_FOUND' });
     }
 
-    const validation = validateFarmerData({ ...farmers[index], ...req.body });
+    const validation = validateFarmerData({ ...existing, ...req.body });
     if (!validation.ok) {
-      return res.status(400).json({ error: 'Validation failed', errors: validation.errors });
+      return res.status(400).json({
+        error: 'Validation failed',
+        code: 'VALIDATION_ERROR',
+        errors: validation.errors
+      });
     }
 
     const updated = normalizeFarmerData({
-      ...farmers[index],
+      ...existing,
       ...validation.data,
-      id: farmers[index].id,
-      createdAt: farmers[index].createdAt || new Date().toISOString()
+      id: existing.id,
+      createdAt: existing.createdAt || new Date().toISOString()
     });
 
-    farmers[index] = updated;
-    writeFarmers(farmers);
+    updateFarmerInDB(existing.id, updated, db);
     return res.json({ farmer: updated });
   });
 
   app.delete('/api/farmers/:id', authMiddleware, (req, res) => {
-    const farmers = readFarmers();
-    const next = farmers.filter((entry) => String(entry.id) !== String(req.params.id));
-
-    if (next.length === farmers.length) {
-      return res.status(404).json({ error: 'Farmer not found' });
+    const deleted = deleteFarmerFromDB(req.params.id, db);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Farmer not found', code: 'NOT_FOUND' });
     }
-
-    writeFarmers(next);
     return res.json({ success: true, deletedId: req.params.id });
   });
 
   app.use((req, res) => {
-    res.status(404).json({ error: 'Not found', path: req.path });
+    res.status(404).json({ error: 'Endpoint not found', path: req.path, code: 'NOT_FOUND' });
   });
 
   return app;
@@ -551,6 +853,13 @@ function createApp(options = {}) {
 
 module.exports = {
   createApp,
+  getDB,
+  readAllFarmers,
+  getFarmerById,
+  getFarmerByCardNumber,
+  insertFarmer,
+  updateFarmerInDB,
+  deleteFarmerFromDB,
   generateToken,
   verifyToken,
   authMiddleware,
@@ -563,8 +872,6 @@ module.exports = {
   maskAadhaar,
   generateCardNumber,
   queryFarmers,
-  readFarmers,
-  writeFarmers,
   getStats,
   exportToCSV
 };
