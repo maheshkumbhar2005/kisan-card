@@ -106,6 +106,28 @@ function validateFarmerData(input = {}) {
   return { ok: errors.length === 0, errors, data };
 }
 
+// Sanitize farmer data for public verification - strictly mask sensitive fields
+function sanitizeForVerification(farmer) {
+  if (!farmer) return null;
+  return {
+    cardNumber: farmer.cardNumber || '',
+    farmerName: farmer.farmerName || '',
+    farmerNameMr: farmer.farmerNameMr || '',
+    fatherName: farmer.fatherName || '',
+    fatherNameMr: farmer.fatherNameMr || '',
+    village: farmer.village || '',
+    address: farmer.address || '',
+    survey: farmer.survey || '',
+    subSurvey: farmer.subSurvey || '',
+    area: farmer.area || '',
+    status: farmer.status || 'active',
+    maskedAadhaar: maskAadhaar(farmer.aadhaar || ''),
+    photo: farmer.photo || '',
+    createdAt: farmer.createdAt || '',
+    isVerified: true
+  };
+}
+
 function queryFarmers(allFarmers, query = {}) {
   let result = [...allFarmers];
 
@@ -325,6 +347,31 @@ function createApp(options = {}) {
     res.json({ stats: getStats() });
   });
 
+  // Public Verification Endpoint
+  app.get('/api/verify/:cardNumber', (req, res) => {
+    const cardId = String(req.params.cardNumber || '').trim().toUpperCase();
+    const farmers = readFarmers();
+    const farmer = farmers.find(
+      (f) =>
+        String(f.cardNumber || '').toUpperCase() === cardId ||
+        String(f.id) === cardId
+    );
+
+    if (!farmer) {
+      return res.status(404).json({
+        valid: false,
+        error: 'Kisan Card not found. Please verify the ID.',
+        verifiedAt: new Date().toISOString()
+      });
+    }
+
+    return res.json({
+      valid: true,
+      verifiedAt: new Date().toISOString(),
+      farmer: sanitizeForVerification(farmer)
+    });
+  });
+
   app.get('/api/farmers/export/csv', (req, res) => {
     const allFarmers = readFarmers();
     const queryResult = queryFarmers(allFarmers, req.query);
@@ -418,6 +465,7 @@ module.exports = {
   createApp,
   normalizeFarmerData,
   validateFarmerData,
+  sanitizeForVerification,
   formatAadhaar,
   maskAadhaar,
   generateCardNumber,

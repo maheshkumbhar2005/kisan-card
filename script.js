@@ -94,12 +94,20 @@ function translateFather(val) {
   }
 }
 
+function getVerificationUrl(cardId) {
+  const base = window.location.origin && window.location.origin !== 'null'
+    ? window.location.origin
+    : '';
+  return `${base}/verify.html?id=${encodeURIComponent(cardId || 'KC-1001')}`;
+}
+
 function setID(val) {
   const cardId = val || 'KC-1001';
   document.getElementById('fid').innerText = cardId;
   const qrEl = document.getElementById('qr');
   if (qrEl) {
-    qrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(cardId)}`;
+    const verifyUrl = getVerificationUrl(cardId);
+    qrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(verifyUrl)}`;
   }
 }
 
@@ -305,6 +313,7 @@ function renderRecentRegistrations(recentList) {
       <td>
         <div class="action-btn-group">
           <button class="btn-action-icon" title="Load & View Card" onclick="loadFarmerIntoStudio('${f.id}')">🪪 View</button>
+          <a href="/verify.html?id=${encodeURIComponent(f.cardNumber)}" target="_blank" class="btn-action-icon" title="Verify Online">🔍 Verify</a>
         </div>
       </td>
     </tr>
@@ -592,10 +601,13 @@ function renderRegistryGrid() {
 
       <div class="saved-card-actions">
         <button class="btn-card-action btn-primary-soft" onclick="loadFarmerIntoStudio('${f.id}')" title="Load into Studio">
-          🪪 View & Print
+          🪪 Card
         </button>
+        <a href="/verify.html?id=${encodeURIComponent(f.cardNumber)}" target="_blank" class="btn-card-action btn-verify-soft" title="Verify Online Portal">
+          🔍 Verify
+        </a>
         <button class="btn-card-action btn-danger-soft" onclick="deleteFarmerRecord('${f.id}')" title="Delete Farmer">
-          🗑️ Delete
+          🗑️
         </button>
       </div>
     </div>
@@ -636,6 +648,7 @@ function renderRegistryTable() {
       <td>
         <div class="action-btn-group">
           <button class="btn-action-icon" title="View Card" onclick="loadFarmerIntoStudio('${f.id}')">🪪</button>
+          <a href="/verify.html?id=${encodeURIComponent(f.cardNumber)}" target="_blank" class="btn-action-icon" title="Verify Online">🔍</a>
           <button class="btn-action-icon btn-del" title="Delete" onclick="deleteFarmerRecord('${f.id}')">🗑️</button>
         </div>
       </td>
@@ -863,6 +876,7 @@ function clearForm() {
   document.getElementById('fid').innerText = 'KC-1001';
 
   resetPhoto();
+  setID('KC-1001');
   toggleAadhaarMask();
   const errBox = document.getElementById('validationErrors');
   if (errBox) errBox.innerHTML = '';
@@ -945,4 +959,5 @@ function escapeHtml(str) {
 document.addEventListener('DOMContentLoaded', () => {
   loadDashboardStats();
   fetchFilteredFarmers();
+  setID(document.getElementById('cardInput').value || 'KC-1001');
 });

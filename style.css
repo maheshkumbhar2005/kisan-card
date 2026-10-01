@@ -159,6 +159,7 @@ body {
 
 .header-actions {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
 }
 
@@ -187,6 +188,7 @@ body {
   border-radius: var(--radius-md);
   border: 1px solid transparent;
   cursor: pointer;
+  text-decoration: none;
   transition: all 0.2s ease;
 }
 
@@ -246,6 +248,20 @@ body {
 
 .btn-primary-soft:hover {
   background: #bbf7d0;
+}
+
+.btn-verify-soft {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-verify-soft:hover {
+  background: #bae6fd;
 }
 
 .btn-danger-soft {
@@ -667,6 +683,10 @@ body {
   cursor: pointer;
   font-size: 0.8rem;
   font-weight: 600;
+  text-decoration: none;
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
   transition: all 0.2s ease;
 }
 

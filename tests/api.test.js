@@ -4,6 +4,7 @@ const {
   createApp,
   normalizeFarmerData,
   validateFarmerData,
+  sanitizeForVerification,
   formatAadhaar,
   maskAadhaar,
   generateCardNumber,
@@ -103,6 +104,25 @@ test('validateFarmerData passes with all required fields', () => {
   assert.equal(result.errors.length, 0);
 });
 
+test('sanitizeForVerification safely masks aadhaar and retains non-sensitive fields', () => {
+  const sanitized = sanitizeForVerification({
+    cardNumber: 'KC-1001',
+    farmerName: 'Ramesh Patil',
+    fatherName: 'Suresh Patil',
+    village: 'Takarkheda',
+    address: 'Main Road',
+    aadhaar: '123456789012',
+    area: '2.5',
+    status: 'active'
+  });
+
+  assert.equal(sanitized.cardNumber, 'KC-1001');
+  assert.equal(sanitized.farmerName, 'Ramesh Patil');
+  assert.equal(sanitized.maskedAadhaar, 'XXXX XXXX 9012');
+  assert.equal(sanitized.aadhaar, undefined);
+  assert.equal(sanitized.isVerified, true);
+});
+
 test('exportToCSV generates valid CSV string', () => {
   const farmers = [
     { id: 1, cardNumber: 'KC-1001', farmerName: 'Ramesh', fatherName: 'Suresh', village: 'Takarkheda', area: '1.5' }
@@ -121,17 +141,14 @@ test('queryFarmers filters by search name, village, or card number', () => {
     { id: 3, cardNumber: 'KC-1003', farmerName: 'Ganesh Jadhav', village: 'Takarkheda', status: 'inactive' }
   ];
 
-  // Search by name
   const byName = queryFarmers(sample, { search: 'ramesh' });
   assert.equal(byName.farmers.length, 1);
   assert.equal(byName.farmers[0].cardNumber, 'KC-1001');
 
-  // Search by card number
   const byCard = queryFarmers(sample, { search: 'KC-1002' });
   assert.equal(byCard.farmers.length, 1);
   assert.equal(byCard.farmers[0].farmerName, 'Suresh Deshmukh');
 
-  // Search by village
   const byVillageSearch = queryFarmers(sample, { search: 'Takarkheda' });
   assert.equal(byVillageSearch.farmers.length, 2);
 });
@@ -143,11 +160,9 @@ test('queryFarmers filters by village and status dropdown', () => {
     { id: 3, cardNumber: 'KC-1003', farmerName: 'Ganesh', village: 'Takarkheda', status: 'inactive' }
   ];
 
-  // Filter village
   const villageFilter = queryFarmers(sample, { village: 'Takarkheda' });
   assert.equal(villageFilter.farmers.length, 2);
 
-  // Filter status
   const statusFilter = queryFarmers(sample, { status: 'inactive' });
   assert.equal(statusFilter.farmers.length, 1);
   assert.equal(statusFilter.farmers[0].farmerName, 'Ganesh');
@@ -221,6 +236,60 @@ test('GET /api/stats returns system statistics', async () => {
     const json = await res.json();
     assert.ok(typeof json.stats.totalFarmers === 'number');
     assert.ok(typeof json.stats.totalVillages === 'number');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('GET /api/verify/:cardNumber returns verified sanitized profile', async () => {
+  const app = createApp({ serveStatic: false });
+  const server = app.listen(0);
+
+  try {
+    const { port } = server.address();
+    const base = 'http://127.0.0.1:' + port;
+
+    // Create a farmer with unique card number to verify
+    const createRes = await fetch(base + '/api/farmers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cardNumber: 'KC-8899',
+        farmerName: 'Kailash Patil',
+        fatherName: 'Pandurang Patil',
+        village: 'Amravati',
+        address: 'Farm House #4',
+        aadhaar: '987654321098'
+      })
+    });
+    const { farmer } = await createRes.json();
+
+    // Verify by Card Number
+    const verifyRes = await fetch(base + '/api/verify/' + farmer.cardNumber);
+    assert.equal(verifyRes.status, 200);
+
+    const verifyJson = await verifyRes.json();
+    assert.equal(verifyJson.valid, true);
+    assert.equal(verifyJson.farmer.farmerName, 'Kailash Patil');
+    assert.equal(verifyJson.farmer.maskedAadhaar, 'XXXX XXXX 1098');
+    assert.equal(verifyJson.farmer.aadhaar, undefined);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('GET /api/verify/:cardNumber returns 404 for invalid card number', async () => {
+  const app = createApp({ serveStatic: false });
+  const server = app.listen(0);
+
+  try {
+    const { port } = server.address();
+    const res = await fetch('http://127.0.0.1:' + port + '/api/verify/INVALID-999');
+    assert.equal(res.status, 404);
+
+    const json = await res.json();
+    assert.equal(json.valid, false);
+    assert.ok(json.error);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

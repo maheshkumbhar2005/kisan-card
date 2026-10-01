@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Official Kisan Card Verification Portal | AgriStack</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .verify-page {
+        min-height: 100vh;
+        background: linear-gradient(180deg, #f0fdf4 0%, #f8fafc 100%);
+        padding-bottom: 3rem;
+      }
+      .verify-hero {
+        background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+        color: #ffffff;
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+        border-bottom: 4px solid #eab308;
+        box-shadow: var(--shadow-md);
+      }
+      .verify-emblem {
+        height: 52px;
+        margin-bottom: 0.75rem;
+        filter: brightness(0) invert(1);
+      }
+      .verify-hero h1 {
+        font-size: 1.85rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.25rem;
+      }
+      .verify-hero p {
+        color: #a7f3d0;
+        font-size: 0.95rem;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .verify-card-container {
+        max-width: 720px;
+        margin: -2rem auto 2rem auto;
+        padding: 0 1rem;
+      }
+      .verify-search-box {
+        background: #ffffff;
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-lg);
+        border: 1px solid var(--border-color);
+        margin-bottom: 1.5rem;
+      }
+      .verify-input-group {
+        display: flex;
+        gap: 0.5rem;
+      }
+      .verify-input {
+        flex: 1;
+        padding: 0.85rem 1.25rem;
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-md);
+        font-family: var(--font-main);
+        font-size: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .verify-input:focus {
+        outline: none;
+        border-color: var(--primary);
+      }
+      .verify-result-card {
+        background: #ffffff;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-xl);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+        display: none;
+        animation: fadeIn 0.3s ease;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .verify-badge-header {
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+      .badge-valid {
+        background: #ecfdf5;
+        border-bottom: 2px solid #34d399;
+      }
+      .badge-invalid {
+        background: #fef2f2;
+        border-bottom: 2px solid #f87171;
+      }
+      .seal-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        flex-shrink: 0;
+      }
+      .seal-valid { background: #d1fae5; color: #059669; }
+      .seal-invalid { background: #fee2e2; color: #dc2626; }
+      .verify-title h3 {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #065f46;
+        margin: 0;
+      }
+      .verify-title p {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin: 2px 0 0 0;
+      }
+      .verify-body-content {
+        padding: 1.75rem;
+      }
+      .farmer-profile-summary {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px dashed var(--border-color);
+        margin-bottom: 1.5rem;
+      }
+      .verified-avatar {
+        width: 90px;
+        height: 90px;
+        border-radius: var(--radius-md);
+        object-fit: cover;
+        border: 3px solid #15803d;
+        box-shadow: var(--shadow-md);
+      }
+      .verified-names h2 {
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0;
+      }
+      .verified-names .mr-name {
+        font-size: 1.1rem;
+        color: var(--primary-dark);
+        font-family: var(--font-mr);
+        margin: 2px 0 6px 0;
+      }
+      .verified-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+      }
+      @media (max-width: 550px) {
+        .verified-grid { grid-template-columns: 1fr; }
+        .farmer-profile-summary { flex-direction: column; text-align: center; }
+      }
+      .verified-item {
+        background: #f8fafc;
+        padding: 0.85rem 1rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+      }
+      .v-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        display: block;
+        margin-bottom: 2px;
+      }
+      .v-value {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+      .privacy-notice {
+        margin-top: 1.5rem;
+        padding: 0.85rem;
+        background: #f0fdf4;
+        border-radius: var(--radius-md);
+        border: 1px solid #bbf7d0;
+        font-size: 0.8rem;
+        color: #166534;
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+      .verify-footer-nav {
+        text-align: center;
+        margin-top: 1.5rem;
+      }
+    </style>
+  </head>
+  <body class="verify-page">
+    <header class="verify-hero">
+      <img class="verify-emblem" src="https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg" alt="Emblem of India" />
+      <h1>AGRISTACK DIGITAL VERIFICATION</h1>
+      <p>Department of Agriculture & Farmers Welfare • Government of India</p>
+    </header>
+
+    <main class="verify-card-container">
+      <div class="verify-search-box">
+        <label for="verifyCardInput" class="filter-label" style="font-size: 0.85rem;">Enter Kisan Card Number to Verify</label>
+        <div class="verify-input-group">
+          <input id="verifyCardInput" class="verify-input" placeholder="e.g. KC-1001" onkeydown="if(event.key==='Enter') executeVerification()" />
+          <button type="button" class="btn btn-primary" onclick="executeVerification()">
+            <span>🔍</span> Verify Identity
+          </button>
+        </div>
+      </div>
+
+      <!-- Result Card -->
+      <div id="verifyResult" class="verify-result-card">
+        <div class="verify-badge-header badge-valid" id="verifyHeader">
+          <div class="seal-icon seal-valid" id="verifySeal">✅</div>
+          <div class="verify-title">
+            <h3 id="verifyHeadline">Authentic & Verified Kisan Identity Card</h3>
+            <p id="verifySubhead">Issued under AgriStack Agricultural Registry Program</p>
+          </div>
+        </div>
+
+        <div class="verify-body-content">
+          <div class="farmer-profile-summary">
+            <img id="verifiedPhoto" class="verified-avatar" src="farmer-placeholder.svg" alt="Farmer Profile" onerror="this.src='farmer-placeholder.svg'" />
+            <div class="verified-names">
+              <span class="card-id-pill" id="verifiedCardNumber">KC-1001</span>
+              <h2 id="verifiedNameEn">Ramesh Patil</h2>
+              <div class="mr-name" id="verifiedNameMr">रमेश पाटील</div>
+              <span class="status-pill status-active" id="verifiedStatus">✅ Active & Verified</span>
+            </div>
+          </div>
+
+          <div class="verified-grid">
+            <div class="verified-item">
+              <span class="v-label">Father's Name</span>
+              <div class="v-value" id="verifiedFather">-</div>
+            </div>
+            <div class="verified-item">
+              <span class="v-label">Village / Cluster</span>
+              <div class="v-value" id="verifiedVillage">-</div>
+            </div>
+            <div class="verified-item">
+              <span class="v-label">Survey / Gat No.</span>
+              <div class="v-value" id="verifiedSurvey">-</div>
+            </div>
+            <div class="verified-item">
+              <span class="v-label">Total Land Holding</span>
+              <div class="v-value text-green" id="verifiedArea">-</div>
+            </div>
+            <div class="verified-item">
+              <span class="v-label">Registered Address</span>
+              <div class="v-value" id="verifiedAddress">-</div>
+            </div>
+            <div class="verified-item">
+              <span class="v-label">Aadhaar (Privacy Protected)</span>
+              <div class="v-value font-mono" id="verifiedAadhaar">XXXX XXXX 9012</div>
+            </div>
+          </div>
+
+          <div class="privacy-notice">
+            <span>🛡️</span>
+            <div>
+              <strong>Privacy Safeguarded:</strong> This public registry view complies with national digital identity standards. Personal identifying numbers remain securely masked.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Invalid / Error Message -->
+      <div id="verifyError" class="verify-result-card" style="display: none;">
+        <div class="verify-badge-header badge-invalid">
+          <div class="seal-icon seal-invalid">❌</div>
+          <div class="verify-title">
+            <h3 style="color: #b91c1c;">Verification Failed / Record Not Found</h3>
+            <p id="verifyErrorMessage">No active record exists for this Kisan Card number.</p>
+          </div>
+        </div>
+        <div class="verify-body-content text-center py-4">
+          <p class="text-muted">Please double check the card number printed on the physical card or scan the QR code again.</p>
+          <button class="btn btn-outline mt-3" onclick="document.getElementById('verifyCardInput').focus()">Try Another ID</button>
+        </div>
+      </div>
+
+      <div class="verify-footer-nav">
+        <a href="/" class="btn btn-sm btn-outline">← Return to Kisan Card Portal</a>
+      </div>
+    </main>
+
+    <script>
+      async function verifyCard(cardId) {
+        if (!cardId) return;
+        const resultCard = document.getElementById('verifyResult');
+        const errorCard = document.getElementById('verifyError');
+        resultCard.style.display = 'none';
+        errorCard.style.display = 'none';
+
+        try {
+          const res = await fetch(`/api/verify/${encodeURIComponent(cardId)}`);
+          const data = await res.json();
+
+          if (!res.ok || !data.valid) {
+            document.getElementById('verifyErrorMessage').innerText = data.error || 'Card not found in government registry.';
+            errorCard.style.display = 'block';
+            return;
+          }
+
+          const f = data.farmer;
+          document.getElementById('verifiedCardNumber').innerText = f.cardNumber;
+          document.getElementById('verifiedNameEn').innerText = f.farmerName || 'Registered Farmer';
+          document.getElementById('verifiedNameMr').innerText = f.farmerNameMr || '';
+          document.getElementById('verifiedFather').innerText = `${f.fatherName || '-'} ${f.fatherNameMr ? '(' + f.fatherNameMr + ')' : ''}`;
+          document.getElementById('verifiedVillage').innerText = f.village || '-';
+          document.getElementById('verifiedSurvey').innerText = `${f.survey || '-'}${f.subSurvey ? ' / ' + f.subSurvey : ''}`;
+          document.getElementById('verifiedArea').innerText = f.area ? `${f.area} Hectares` : 'N/A';
+          document.getElementById('verifiedAddress').innerText = f.address || '-';
+          document.getElementById('verifiedAadhaar').innerText = f.maskedAadhaar || 'XXXX XXXX XXXX';
+          document.getElementById('verifiedStatus').innerText = f.status === 'inactive' ? '⏳ Pending Review' : '✅ Active & Verified';
+          document.getElementById('verifiedStatus').className = `status-pill status-${f.status === 'inactive' ? 'inactive' : 'active'}`;
+
+          const photoEl = document.getElementById('verifiedPhoto');
+          photoEl.src = f.photo || 'farmer-placeholder.svg';
+
+          resultCard.style.display = 'block';
+        } catch (err) {
+          document.getElementById('verifyErrorMessage').innerText = 'Network error verifying identity: ' + err.message;
+          errorCard.style.display = 'block';
+        }
+      }
+
+      function executeVerification() {
+        const input = document.getElementById('verifyCardInput');
+        const cardId = input.value.trim();
+        if (cardId) {
+          window.history.replaceState(null, '', `?id=${encodeURIComponent(cardId)}`);
+          verifyCard(cardId);
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        const cardId = params.get('id') || params.get('card') || params.get('cardNumber');
+        if (cardId) {
+          document.getElementById('verifyCardInput').value = cardId;
+          verifyCard(cardId);
+        }
+      });
+    </script>
+  </body>
+</html>
