@@ -33,10 +33,10 @@
           <button class="nav-tab active" id="tabDashboard" onclick="switchView('dashboard')">
             <span class="tab-icon">📊</span> Executive Dashboard
           </button>
-          <button class="nav-tab" id="tabStudio" onclick="switchView('studio')">
+          <button class="nav-tab" id="tabStudio" onclick="handleProtectedNavigation('studio')">
             <span class="tab-icon">🪪</span> Card Generator
           </button>
-          <button class="nav-tab" id="tabRegistry" onclick="switchView('registry')">
+          <button class="nav-tab" id="tabRegistry" onclick="handleProtectedNavigation('registry')">
             <span class="tab-icon">📁</span> Farmers Registry
             <span class="nav-badge" id="navFarmerCount">0</span>
           </button>
@@ -46,10 +46,18 @@
           <a href="/verify.html" target="_blank" class="btn btn-sm btn-outline" title="Public Online Verification Portal">
             <span>🔍</span> Verify Card
           </a>
-          <button class="btn btn-sm btn-outline" onclick="exportCSV()">
-            <span>📥</span> Export CSV
-          </button>
-          <button class="btn btn-sm btn-primary" onclick="switchView('studio'); clearForm();">
+          <!-- Dynamic Auth Area -->
+          <div id="authArea" class="auth-header-area">
+            <button type="button" class="btn btn-sm btn-outline btn-admin-login" id="loginBtn" onclick="openLoginModal()">
+              <span>🔐</span> Admin Login
+            </button>
+            <div id="loggedInUserBadge" class="admin-user-badge" style="display: none;">
+              <span class="admin-indicator-dot"></span>
+              <span class="admin-username" id="adminUserDisplay">Admin</span>
+              <button type="button" class="btn-logout-icon" onclick="logoutAdmin()" title="Logout Admin">🚪</button>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="handleProtectedNavigation('studio'); clearForm();">
             <span>➕</span> New Registration
           </button>
         </div>
@@ -64,7 +72,7 @@
           <p>Real-time analytics for registered farmers, village demographic distribution, and land parcels.</p>
         </div>
         <div class="hero-actions">
-          <button class="btn btn-primary" onclick="switchView('studio')">
+          <button class="btn btn-primary" onclick="handleProtectedNavigation('studio')">
             <span>✨</span> Generate Kisan Card
           </button>
           <button class="btn btn-secondary" onclick="loadDashboardStats()">
@@ -223,7 +231,7 @@
             <h3>⏱️ Recent Registrations</h3>
             <p class="card-subtitle">Latest issued farmer identity cards and records</p>
           </div>
-          <button type="button" class="btn btn-sm btn-outline" onclick="switchView('registry')">
+          <button type="button" class="btn btn-sm btn-outline" onclick="handleProtectedNavigation('registry')">
             View All in Registry ➔
           </button>
         </div>
@@ -252,7 +260,7 @@
       </div>
     </section>
 
-    <!-- VIEW 2: CARD STUDIO & GENERATOR -->
+    <!-- VIEW 2: CARD STUDIO & GENERATOR (PROTECTED) -->
     <section id="viewStudio" class="view-section">
       <main class="main-layout">
         <!-- Form Section -->
@@ -434,7 +442,7 @@
       </main>
     </section>
 
-    <!-- VIEW 3: FARMERS DIRECTORY REGISTRY WITH ADVANCED SEARCH & FILTERS -->
+    <!-- VIEW 3: FARMERS DIRECTORY REGISTRY (PROTECTED) -->
     <section id="viewRegistry" class="view-section">
       <div class="registry-container">
         <div class="saved-panel" id="savedPanel">
@@ -454,7 +462,7 @@
                 </button>
               </div>
               <button class="btn btn-sm btn-outline" onclick="exportCSV()">📥 Export CSV</button>
-              <button class="btn btn-sm btn-primary" onclick="switchView('studio'); clearForm();">➕ Add Farmer</button>
+              <button class="btn btn-sm btn-primary" onclick="handleProtectedNavigation('studio'); clearForm();">➕ Add Farmer</button>
             </div>
           </div>
 
@@ -571,6 +579,37 @@
         </div>
       </div>
     </section>
+
+    <!-- Admin Login Modal -->
+    <div id="loginModal" class="modal">
+      <div class="modal-content modal-auth">
+        <div class="modal-header auth-modal-header">
+          <div>
+            <h4>🔐 Administrator Login</h4>
+            <p class="text-xs text-muted" style="margin: 2px 0 0 0;">Enter official credentials to manage records</p>
+          </div>
+          <button type="button" class="close-btn" onclick="closeLoginModal()">✕</button>
+        </div>
+        <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" class="auth-form-body">
+          <div class="field-group">
+            <label for="adminUsernameInput">Admin Username</label>
+            <input id="adminUsernameInput" required placeholder="e.g. admin" value="admin" />
+          </div>
+          <div class="field-group">
+            <label for="adminPasswordInput">Password</label>
+            <input id="adminPasswordInput" type="password" required placeholder="Enter password (default: admin123)" />
+          </div>
+          <div id="loginErrorBox" class="login-error-text" style="display: none;"></div>
+          <div class="modal-footer" style="padding-left: 0; padding-right: 0; border-top: none;">
+            <button type="button" class="btn btn-outline" onclick="closeLoginModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="loginSubmitBtn">Sign In as Admin</button>
+          </div>
+          <div class="auth-helper-note">
+            ℹ️ Default credentials: <code>admin</code> / <code>admin123</code>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <!-- Camera Modal -->
     <div id="cameraModal" class="modal">

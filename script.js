@@ -4,6 +4,13 @@ let defaultPhotoSrc = 'farmer-placeholder.svg';
 let cameraStreamTrack = null;
 let activeView = 'dashboard';
 
+// Admin Auth State
+const authState = {
+  token: localStorage.getItem('kisan_admin_token') || '',
+  user: JSON.parse(localStorage.getItem('kisan_admin_user') || 'null'),
+  isAuthenticated: false
+};
+
 // Filter, Sort, Pagination & Display State
 const filterState = {
   search: '',
@@ -35,6 +42,150 @@ function autoTranslate(text) {
   const words = text.toLowerCase().split(/\s+/);
   const translated = words.map((w) => marathiMap[w] || w);
   return translated.join(' ');
+}
+
+// ----------------------------------------------------
+// AUTHENTICATION & ACCESS CONTROL
+// ----------------------------------------------------
+
+function getAuthHeaders() {
+  const headers = { 'Content-Type': 'application/json' };
+  if (authState.token) {
+    headers['Authorization'] = `Bearer ${authState.token}`;
+  }
+  return headers;
+}
+
+async function checkAuthStatus() {
+  if (!authState.token) {
+    updateAuthUI(false);
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth/me', {
+      headers: { 'Authorization': `Bearer ${authState.token}` }
+    });
+    const data = await res.json();
+    if (data.authenticated) {
+      authState.isAuthenticated = true;
+      authState.user = data.user;
+      updateAuthUI(true);
+    } else {
+      logoutAdmin(false);
+    }
+  } catch (err) {
+    updateAuthUI(false);
+  }
+}
+
+function updateAuthUI(isLoggedIn) {
+  authState.isAuthenticated = isLoggedIn;
+  const loginBtn = document.getElementById('loginBtn');
+  const userBadge = document.getElementById('loggedInUserBadge');
+  const userDisplay = document.getElementById('adminUserDisplay');
+
+  if (isLoggedIn) {
+    if (loginBtn) loginBtn.style.display = 'none';
+    if (userBadge) userBadge.style.display = 'inline-flex';
+    if (userDisplay) userDisplay.innerText = authState.user?.username || 'Admin';
+  } else {
+    if (loginBtn) loginBtn.style.display = 'inline-flex';
+    if (userBadge) userBadge.style.display = 'none';
+  }
+}
+
+function openLoginModal(pendingTargetView = null) {
+  const modal = document.getElementById('loginModal');
+  if (modal) {
+    modal.classList.add('active');
+    modal.dataset.pendingView = pendingTargetView || '';
+    document.getElementById('adminPasswordInput').value = '';
+    const errBox = document.getElementById('loginErrorBox');
+    if (errBox) errBox.style.display = 'none';
+    setTimeout(() => document.getElementById('adminPasswordInput').focus(), 100);
+  }
+}
+
+function closeLoginModal() {
+  const modal = document.getElementById('loginModal');
+  if (modal) modal.classList.remove('active');
+}
+
+async function handleAdminLogin(event) {
+  event.preventDefault();
+  const username = document.getElementById('adminUsernameInput').value.trim();
+  const password = document.getElementById('adminPasswordInput').value;
+  const errBox = document.getElementById('loginErrorBox');
+  const submitBtn = document.getElementById('loginSubmitBtn');
+
+  submitBtn.disabled = true;
+  submitBtn.innerText = 'Verifying...';
+  if (errBox) errBox.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Authentication failed');
+    }
+
+    authState.token = data.token;
+    authState.user = data.user;
+    authState.isAuthenticated = true;
+
+    localStorage.setItem('kisan_admin_token', data.token);
+    localStorage.setItem('kisan_admin_user', JSON.stringify(data.user));
+
+    updateAuthUI(true);
+    closeLoginModal();
+
+    const pendingView = document.getElementById('loginModal')?.dataset.pendingView;
+    if (pendingView) {
+      switchView(pendingView);
+    } else {
+      if (activeView === 'registry') fetchFilteredFarmers();
+    }
+  } catch (err) {
+    if (errBox) {
+      errBox.innerText = `⚠️ ${err.message}`;
+      errBox.style.display = 'block';
+    }
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerText = 'Sign In as Admin';
+  }
+}
+
+function logoutAdmin(showAlert = true) {
+  authState.token = '';
+  authState.user = null;
+  authState.isAuthenticated = false;
+
+  localStorage.removeItem('kisan_admin_token');
+  localStorage.removeItem('kisan_admin_user');
+
+  updateAuthUI(false);
+  if (showAlert) alert('Logged out successfully.');
+
+  if (activeView === 'studio' || activeView === 'registry') {
+    switchView('dashboard');
+  }
+}
+
+function handleProtectedNavigation(viewName) {
+  if (viewName === 'studio' || viewName === 'registry') {
+    if (!authState.isAuthenticated) {
+      openLoginModal(viewName);
+      return;
+    }
+  }
+  switchView(viewName);
 }
 
 // Format and Mask Aadhaar
@@ -312,7 +463,7 @@ function renderRecentRegistrations(recentList) {
       </td>
       <td>
         <div class="action-btn-group">
-          <button class="btn-action-icon" title="Load & View Card" onclick="loadFarmerIntoStudio('${f.id}')">🪪 View</button>
+          <button class="btn-action-icon" title="Load & View Card" onclick="handleProtectedRecordView('${f.cardNumber}')">🪪 View</button>
           <a href="/verify.html?id=${encodeURIComponent(f.cardNumber)}" target="_blank" class="btn-action-icon" title="Verify Online">🔍 Verify</a>
         </div>
       </td>
@@ -320,11 +471,24 @@ function renderRecentRegistrations(recentList) {
   `).join('');
 }
 
+function handleProtectedRecordView(cardId) {
+  if (!authState.isAuthenticated) {
+    openLoginModal('studio');
+    return;
+  }
+  loadFarmerIntoStudioByCard(cardId);
+}
+
 // ----------------------------------------------------
 // ADVANCED SEARCH, FILTER, SORT & PAGINATION
 // ----------------------------------------------------
 
 async function fetchFilteredFarmers() {
+  if (!authState.isAuthenticated) {
+    openLoginModal('registry');
+    return;
+  }
+
   try {
     const params = new URLSearchParams({
       search: filterState.search,
@@ -336,7 +500,16 @@ async function fetchFilteredFarmers() {
       limit: filterState.limit
     });
 
-    const res = await fetch(`/api/farmers?${params.toString()}`);
+    const res = await fetch(`/api/farmers?${params.toString()}`, {
+      headers: getAuthHeaders()
+    });
+
+    if (res.status === 401) {
+      logoutAdmin(false);
+      openLoginModal('registry');
+      return;
+    }
+
     if (!res.ok) throw new Error('Failed to load farmers');
     const data = await res.json();
 
@@ -727,9 +900,13 @@ function renderPagination() {
 // ----------------------------------------------------
 
 function loadFarmerIntoStudio(farmerId) {
+  if (!authState.isAuthenticated) {
+    openLoginModal('studio');
+    return;
+  }
   const f = savedFarmers.find((entry) => String(entry.id) === String(farmerId));
   if (!f) {
-    fetch(`/api/farmers/${farmerId}`)
+    fetch(`/api/farmers/${farmerId}`, { headers: getAuthHeaders() })
       .then((res) => res.json())
       .then((data) => {
         if (data.farmer) populateStudioWithFarmer(data.farmer);
@@ -737,6 +914,18 @@ function loadFarmerIntoStudio(farmerId) {
     return;
   }
   populateStudioWithFarmer(f);
+}
+
+function loadFarmerIntoStudioByCard(cardId) {
+  if (!authState.isAuthenticated) {
+    openLoginModal('studio');
+    return;
+  }
+  fetch(`/api/verify/${encodeURIComponent(cardId)}`)
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.farmer) populateStudioWithFarmer(data.farmer);
+    });
 }
 
 function populateStudioWithFarmer(f) {
@@ -780,6 +969,11 @@ function populateStudioWithFarmer(f) {
 }
 
 async function saveFarmer() {
+  if (!authState.isAuthenticated) {
+    openLoginModal('studio');
+    return;
+  }
+
   const name = document.getElementById('nameInput').value.trim();
   const father = document.getElementById('fatherInput').value.trim();
   const address = document.getElementById('addressInput').value.trim();
@@ -820,9 +1014,15 @@ async function saveFarmer() {
   try {
     const res = await fetch('/api/farmers', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(payload)
     });
+
+    if (res.status === 401) {
+      logoutAdmin(false);
+      openLoginModal('studio');
+      return;
+    }
 
     if (!res.ok) {
       const errData = await res.json();
@@ -831,17 +1031,32 @@ async function saveFarmer() {
 
     alert('✅ Farmer card saved successfully!');
     loadDashboardStats();
-    fetchFilteredFarmers();
+    if (activeView === 'registry') fetchFilteredFarmers();
   } catch (err) {
     alert('Error saving farmer: ' + err.message);
   }
 }
 
 async function deleteFarmerRecord(id) {
+  if (!authState.isAuthenticated) {
+    openLoginModal('registry');
+    return;
+  }
+
   if (!confirm('Are you sure you want to delete this farmer registration?')) return;
 
   try {
-    const res = await fetch(`/api/farmers/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/farmers/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+
+    if (res.status === 401) {
+      logoutAdmin(false);
+      openLoginModal('registry');
+      return;
+    }
+
     if (!res.ok) throw new Error('Failed to delete');
 
     loadDashboardStats();
@@ -883,10 +1098,16 @@ function clearForm() {
 }
 
 function exportCSV() {
+  if (!authState.isAuthenticated) {
+    openLoginModal('registry');
+    return;
+  }
+
   const params = new URLSearchParams({
     search: filterState.search,
     village: filterState.village,
-    status: filterState.status
+    status: filterState.status,
+    token: authState.token
   });
   window.location.href = `/api/farmers/export/csv?${params.toString()}`;
 }
@@ -909,9 +1130,7 @@ async function handleDownloadCombined() {
     const imgDataFront = canvasFront.toDataURL('image/png');
     const imgDataBack = canvasBack.toDataURL('image/png');
 
-    // Place Front Card
     pdf.addImage(imgDataFront, 'PNG', 20, 20, 170, 100);
-    // Place Back Card
     pdf.addImage(imgDataBack, 'PNG', 20, 130, 170, 100);
 
     const cardId = document.getElementById('fid').innerText || 'KC-1001';
@@ -957,7 +1176,7 @@ function escapeHtml(str) {
 
 // Initial Boot
 document.addEventListener('DOMContentLoaded', () => {
+  checkAuthStatus();
   loadDashboardStats();
-  fetchFilteredFarmers();
   setID(document.getElementById('cardInput').value || 'KC-1001');
 });

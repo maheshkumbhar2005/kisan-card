@@ -1,7 +1,11 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 
 const DATA_FILE = path.join(__dirname, 'data', 'farmers.json');
+const SECRET_KEY = process.env.JWT_SECRET || 'kisan-card-super-secret-admin-key-2026';
+const ADMIN_USER = process.env.ADMIN_USERNAME || 'admin';
+const ADMIN_PASS = process.env.ADMIN_PASSWORD || 'admin123';
 
 function ensureDataFile() {
   fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
@@ -24,6 +28,59 @@ function readFarmers() {
 function writeFarmers(farmers) {
   ensureDataFile();
   fs.writeFileSync(DATA_FILE, JSON.stringify(farmers, null, 2), 'utf8');
+}
+
+// ----------------------------------------------------
+// TOKEN & AUTH UTILITIES (Node crypto based HMAC)
+// ----------------------------------------------------
+
+function generateToken(payload = {}) {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const exp = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  const body = Buffer.from(JSON.stringify({ ...payload, exp })).toString('base64url');
+  const signature = crypto.createHmac('sha256', SECRET_KEY).update(`${header}.${body}`).digest('base64url');
+  return `${header}.${body}.${signature}`;
+}
+
+function verifyToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [header, body, signature] = parts;
+  const expectedSignature = crypto.createHmac('sha256', SECRET_KEY).update(`${header}.${body}`).digest('base64url');
+  if (signature !== expectedSignature) return null;
+
+  try {
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+    if (payload.exp && Date.now() > payload.exp) {
+      return null; // Expired
+    }
+    return payload;
+  } catch (err) {
+    return null;
+  }
+}
+
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers['authorization'] || '';
+  let token = '';
+
+  if (authHeader.startsWith('Bearer ')) {
+    token = authHeader.slice(7).trim();
+  } else if (req.query && req.query.token) {
+    token = String(req.query.token).trim();
+  }
+
+  const user = verifyToken(token);
+  if (!user) {
+    return res.status(401).json({
+      error: 'Unauthorized. Admin authentication required.',
+      code: 'AUTH_REQUIRED'
+    });
+  }
+
+  req.user = user;
+  next();
 }
 
 function formatAadhaar(value) {
@@ -290,9 +347,11 @@ function getStats() {
 
   const avgAreaHectare = totalFarmers > 0 ? Number((totalArea / totalFarmers).toFixed(2)) : 0;
 
+  // Mask sensitive Aadhaar in public recent registrations
   const recentFarmers = [...farmers]
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-    .slice(0, 8);
+    .slice(0, 8)
+    .map((f) => sanitizeForVerification(f));
 
   return {
     totalFarmers,
@@ -339,12 +398,40 @@ function createApp(options = {}) {
     app.use(express.static(__dirname));
   }
 
+  // 1. PUBLIC ROUTES
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', app: 'kisan-card-api' });
   });
 
   app.get('/api/stats', (_req, res) => {
     res.json({ stats: getStats() });
+  });
+
+  // Authentication Endpoints
+  app.post('/api/auth/login', (req, res) => {
+    const { username, password } = req.body || {};
+    if (username === ADMIN_USER && password === ADMIN_PASS) {
+      const token = generateToken({ username, role: 'admin' });
+      return res.json({
+        success: true,
+        token,
+        user: { username, role: 'admin' }
+      });
+    }
+    return res.status(401).json({
+      success: false,
+      error: 'Invalid administrator credentials'
+    });
+  });
+
+  app.get('/api/auth/me', (req, res) => {
+    const authHeader = req.headers['authorization'] || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+    const user = verifyToken(token);
+    if (!user) {
+      return res.json({ authenticated: false });
+    }
+    return res.json({ authenticated: true, user });
   });
 
   // Public Verification Endpoint
@@ -372,7 +459,8 @@ function createApp(options = {}) {
     });
   });
 
-  app.get('/api/farmers/export/csv', (req, res) => {
+  // 2. PROTECTED ROUTES (Admin Authentication Required)
+  app.get('/api/farmers/export/csv', authMiddleware, (req, res) => {
     const allFarmers = readFarmers();
     const queryResult = queryFarmers(allFarmers, req.query);
     const csv = exportToCSV(queryResult.farmers);
@@ -381,13 +469,13 @@ function createApp(options = {}) {
     res.send(csv);
   });
 
-  app.get('/api/farmers', (req, res) => {
+  app.get('/api/farmers', authMiddleware, (req, res) => {
     const allFarmers = readFarmers();
     const result = queryFarmers(allFarmers, req.query);
     res.json(result);
   });
 
-  app.get('/api/farmers/:id', (req, res) => {
+  app.get('/api/farmers/:id', authMiddleware, (req, res) => {
     const farmers = readFarmers();
     const farmer = farmers.find((entry) => String(entry.id) === String(req.params.id));
 
@@ -398,7 +486,7 @@ function createApp(options = {}) {
     return res.json({ farmer });
   });
 
-  app.post('/api/farmers', (req, res) => {
+  app.post('/api/farmers', authMiddleware, (req, res) => {
     const farmers = readFarmers();
     const validation = validateFarmerData(req.body || {});
 
@@ -417,7 +505,7 @@ function createApp(options = {}) {
     return res.status(201).json({ farmer });
   });
 
-  app.put('/api/farmers/:id', (req, res) => {
+  app.put('/api/farmers/:id', authMiddleware, (req, res) => {
     const farmers = readFarmers();
     const index = farmers.findIndex((entry) => String(entry.id) === String(req.params.id));
 
@@ -442,7 +530,7 @@ function createApp(options = {}) {
     return res.json({ farmer: updated });
   });
 
-  app.delete('/api/farmers/:id', (req, res) => {
+  app.delete('/api/farmers/:id', authMiddleware, (req, res) => {
     const farmers = readFarmers();
     const next = farmers.filter((entry) => String(entry.id) !== String(req.params.id));
 
@@ -463,6 +551,11 @@ function createApp(options = {}) {
 
 module.exports = {
   createApp,
+  generateToken,
+  verifyToken,
+  authMiddleware,
+  ADMIN_USER,
+  ADMIN_PASS,
   normalizeFarmerData,
   validateFarmerData,
   sanitizeForVerification,
