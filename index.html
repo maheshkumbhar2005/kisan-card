@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Kisan Card Pro - Executive Dashboard, Generator & Registry</title>
 
-    <!-- Google Fonts: Outfit for crisp modern UI, Noto Sans Devanagari for Marathi -->
+    <!-- Google Fonts: Outfit, Noto Sans Devanagari, and Caveat for handwritten signatures -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Noto+Sans+Devanagari:wght@400;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
     <!-- External Libraries for High-DPI PDF & Printing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -44,7 +44,7 @@
 
         <div class="header-actions">
           <!-- Language Switcher Toggle -->
-          <button type="button" class="lang-toggle-btn" id="langToggleBtn" onclick="toggleLanguage()" title="Switch Language between English and Marathi / भाषा बदला" aria-label="Switch Language between English and Marathi">
+          <button type="button" class="lang-toggle-btn" id="langToggleBtn" onclick="toggleLanguage()" title="Switch Language between English and Marathi / भाषा बदला" aria-label="Switch Language">
             <span>🌐</span> <span id="currentLangLabel">मराठी</span>
           </button>
 
@@ -175,9 +175,29 @@
           </div>
 
           <div class="form-grid">
+            <!-- 1. Unique Card Number with Auto Gen Button -->
             <div class="field-group">
               <label for="cardInput" data-i18n="labelCardNumber">Card Number</label>
-              <input id="cardInput" placeholder="Auto-generated (e.g. KC-1001)" oninput="setID(this.value)" />
+              <div class="input-with-action">
+                <input id="cardInput" placeholder="Auto (e.g. KC-1001)" oninput="setID(this.value)" />
+                <button type="button" class="btn btn-sm btn-outline" onclick="autoGenCardNumber()" title="Auto-generate next unique ID">⚡ Auto</button>
+              </div>
+            </div>
+
+            <!-- 2. Card Status (Active / Pending / Expired) -->
+            <div class="field-group">
+              <label for="statusInput">Card Status</label>
+              <select id="statusInput" onchange="setCardStatus(this.value)">
+                <option value="active">Active (सक्रिय)</option>
+                <option value="pending">Pending (प्रलंबित)</option>
+                <option value="expired">Expired (कालबाह्य)</option>
+              </select>
+            </div>
+
+            <!-- 3. Issue Date -->
+            <div class="field-group">
+              <label for="issueDateInput">Issue Date</label>
+              <input id="issueDateInput" type="date" onchange="setIssueDate(this.value)" />
             </div>
 
             <div class="field-group">
@@ -235,11 +255,42 @@
               <label for="areaInput" data-i18n="labelArea">Land Area (Hectare)</label>
               <input id="areaInput" type="number" step="0.01" placeholder="e.g. 1.08" oninput="document.getElementById('area').innerText=this.value || '1.08'" />
             </div>
+
+            <!-- 4. Card Template Selection -->
+            <div class="field-group full-width">
+              <label>Card Template Selection</label>
+              <div class="template-picker-grid">
+                <button type="button" class="template-btn active" id="tplEmerald" onclick="setCardTemplate('emerald')">
+                  <span class="theme-dot dot-emerald"></span> Emerald Classic
+                </button>
+                <button type="button" class="template-btn" id="tplSapphire" onclick="setCardTemplate('sapphire')">
+                  <span class="theme-dot dot-sapphire"></span> Sapphire Tech
+                </button>
+                <button type="button" class="template-btn" id="tplTricolor" onclick="setCardTemplate('tricolor')">
+                  <span class="theme-dot dot-tricolor"></span> Tricolor National
+                </button>
+                <button type="button" class="template-btn" id="tplMidnight" onclick="setCardTemplate('midnight')">
+                  <span class="theme-dot dot-midnight"></span> Midnight Gold
+                </button>
+              </div>
+            </div>
+
+            <!-- 5. Farmer Signature Section -->
+            <div class="field-group full-width">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label>Farmer Signature (Optional)</label>
+                <span id="sigStatusLabel" style="font-size: 0.75rem; color: #64748b;">No signature added</span>
+              </div>
+              <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem; flex-wrap: wrap;">
+                <button type="button" class="btn btn-sm btn-outline" onclick="openSignatureModal()">✍️ Draw / Type Signature</button>
+                <button type="button" class="btn btn-sm btn-danger-soft" onclick="clearSignature()">↺ Clear</button>
+              </div>
+            </div>
           </div>
 
           <div id="validationErrors" class="validation-errors" role="alert"></div>
 
-          <!-- Photo Upload & Camera Capture with Thumbnail -->
+          <!-- Photo Upload & Photo Editing Section -->
           <div class="photo-upload-card">
             <div class="photo-info-preview">
               <div class="photo-thumb-wrap">
@@ -254,6 +305,7 @@
               <input id="photoInput" type="file" accept="image/*" onchange="loadPhoto(event)" style="display:none" />
               <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('photoInput').click()">📁 <span data-i18n="btnUpload">Upload</span></button>
               <button type="button" class="btn btn-sm btn-secondary" onclick="openCameraModal()">📷 <span data-i18n="btnCamera">Camera</span></button>
+              <button type="button" class="btn btn-sm btn-outline" id="btnEditPhoto" onclick="openPhotoEditorModal()" title="Crop, rotate and reposition photo">✂️ Edit</button>
               <button type="button" class="btn btn-sm btn-danger-soft" onclick="resetPhoto()">↺ <span data-i18n="btnReset">Reset</span></button>
             </div>
           </div>
@@ -269,11 +321,19 @@
           <div class="preview-header-bar">
             <h3 data-i18n="previewTitle">🪪 Live Card Preview</h3>
             <div class="export-actions">
-              <button class="btn btn-primary btn-sm" id="downloadCombinedBtn" onclick="handleDownloadCombined()" title="Download High-DPI Dual Sided PDF">📑 Dual PDF</button>
-              <button class="btn btn-outline btn-sm" id="downloadBtn" onclick="handleDownload()" title="Download Front Card PDF">Front</button>
-              <button class="btn btn-outline btn-sm" id="downloadBackBtn" onclick="handleDownloadBack()" title="Download Back Card PDF">Back</button>
+              <button class="btn btn-outline btn-sm" onclick="openPrintPreviewModal()" title="View Front and Back side-by-side before printing">👁️ Preview</button>
+              <button class="btn btn-primary btn-sm" id="downloadCombinedBtn" onclick="handleDownloadCombinedPDF()" title="Download High-DPI Dual Sided PDF">📑 Dual PDF</button>
+              <button class="btn btn-outline btn-sm" onclick="handleDownloadFrontPNG()" title="Download Front Card as PNG Image">🖼️ PNG</button>
               <button class="btn btn-outline btn-sm" id="printBtn" onclick="handlePrint()" title="Print CR-80 Cards">🖨️ Print</button>
             </div>
+          </div>
+
+          <!-- Extended Download Options Bar -->
+          <div style="display: flex; gap: 0.35rem; width: 100%; max-width: 440px; margin-bottom: 0.75rem; flex-wrap: wrap;">
+            <button class="btn btn-sm btn-secondary" style="font-size: 0.75rem; padding: 3px 7px;" onclick="handleDownloadFrontPDF()">PDF Front</button>
+            <button class="btn btn-sm btn-secondary" style="font-size: 0.75rem; padding: 3px 7px;" onclick="handleDownloadBackPDF()">PDF Back</button>
+            <button class="btn btn-sm btn-secondary" style="font-size: 0.75rem; padding: 3px 7px;" onclick="handleDownloadBackPNG()">PNG Back</button>
+            <button class="btn btn-sm btn-secondary" style="font-size: 0.75rem; padding: 3px 7px;" onclick="handleDownloadCombinedPNG()">PNG Dual</button>
           </div>
 
           <!-- Mobile Card Face Switcher (Tabs) -->
@@ -292,7 +352,7 @@
           <div class="card-preview-area" id="printContainer">
             <!-- FRONT CR-80 CARD -->
             <div class="card-scale-wrapper" id="frontCardWrapper">
-              <div class="kisan-cr80-card" id="card">
+              <div class="kisan-cr80-card theme-emerald" id="card">
                 <div class="top-stripe"></div>
 
                 <div class="card-header-row">
@@ -300,7 +360,8 @@
                     <h2 data-i18n="cardHeaderTitle">KISAN CARD</h2>
                     <p data-i18n="cardHeaderSub">Department of Agriculture • Maharashtra</p>
                   </div>
-                  <div class="card-emblem-wrap">
+                  <div class="card-emblem-wrap" style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span class="card-status-badge card-status-active" id="cardStatusBadge">ACTIVE</span>
                     <img src="https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg" alt="Emblem of India" />
                   </div>
                 </div>
@@ -328,15 +389,31 @@
                   </div>
                 </div>
 
-                <div class="card-aadhaar-tag">
-                  <span data-i18n="cardLblAadhaar">Aadhaar:</span>
-                  <span id="aadhaar" style="font-family: monospace; letter-spacing: 0.05em;">XXXX XXXX XXXX</span>
+                <!-- Aadhaar Tag & Dates -->
+                <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 3px;">
+                  <div class="card-aadhaar-tag">
+                    <span data-i18n="cardLblAadhaar">Aadhaar:</span>
+                    <span id="aadhaar" style="font-family: monospace; letter-spacing: 0.05em;">XXXX XXXX XXXX</span>
+                  </div>
+                  <div class="card-dates-row">
+                    <span id="cardIssueDate">Issued: 01/10/2026</span>
+                  </div>
                 </div>
 
                 <!-- Fixed Standard Photo Container -->
                 <div class="card-photo-box">
                   <img id="photo" src="farmer-placeholder.svg" alt="Farmer Portrait Photo" />
                 </div>
+
+                <!-- Farmer Signature Box on Front Card -->
+                <div class="card-signature-box" id="cardSignatureBox">
+                  <img id="cardSigImg" class="card-sig-img" alt="Farmer Signature" style="display: none;" />
+                  <span id="cardSigText" class="card-sig-text" style="display: none;">Ramesh Patil</span>
+                  <span class="card-sig-label">Farmer Signature</span>
+                </div>
+
+                <!-- Security Hologram Seal Simulation -->
+                <div class="card-hologram-seal" title="AgriStack Authenticated Hologram">★</div>
 
                 <!-- Card Number Badge -->
                 <div class="card-id-badge" id="fid">KC-1001</div>
@@ -349,7 +426,7 @@
 
             <!-- BACK CR-80 CARD -->
             <div class="card-scale-wrapper" id="backCardWrapper">
-              <div class="kisan-cr80-card back-card" id="cardBack">
+              <div class="kisan-cr80-card back-card theme-emerald" id="cardBack">
                 <div class="top-stripe"></div>
 
                 <div class="back-header-row">
@@ -385,7 +462,7 @@
                         <td id="village">Takarkheda</td>
                         <td id="survey">213</td>
                         <td id="sub">2</td>
-                        <td id="area" style="font-weight: 700; color: #15803d;">1.08</td>
+                        <td id="area" style="font-weight: 700;">1.08</td>
                       </tr>
                     </tbody>
                   </table>
@@ -446,7 +523,8 @@
                 <select id="statusFilterSelect" class="filter-select" onchange="handleStatusFilter(this.value)">
                   <option value="" data-i18n="optAllStatus">All Status</option>
                   <option value="active" data-i18n="optActive">Active</option>
-                  <option value="inactive" data-i18n="optPending">Pending</option>
+                  <option value="pending" data-i18n="optPending">Pending</option>
+                  <option value="expired">Expired</option>
                 </select>
               </div>
 
@@ -496,7 +574,11 @@
       </div>
     </section>
 
-        <!-- ADMIN LOGIN MODAL -->
+    <!-- ==========================================================================
+         MODALS: LOGIN, CAMERA, PHOTO EDITOR, SIGNATURE PAD, PRINT PREVIEW
+         ========================================================================== -->
+
+    <!-- 1. ADMIN LOGIN MODAL -->
     <div id="loginModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
       <div class="modal-content">
         <div class="modal-header">
@@ -530,7 +612,7 @@
       </div>
     </div>
 
-    <!-- CAMERA CAPTURE MODAL -->
+    <!-- 2. CAMERA CAPTURE MODAL -->
     <div id="cameraModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="cameraModalTitle">
       <div class="modal-content" style="max-width: 540px;">
         <div class="modal-header">
@@ -548,6 +630,107 @@
       </div>
     </div>
 
+    <!-- 3. PHOTO EDITOR MODAL (Crop, Rotate, Zoom & Reposition) -->
+    <div id="photoEditorModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="photoEditorTitle">
+      <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+          <h3 id="photoEditorTitle">✂️ Photo Editor & Cropper</h3>
+          <button type="button" class="close-btn" onclick="closePhotoEditorModal()" aria-label="Close modal">×</button>
+        </div>
+        <div class="modal-body photo-editor-body">
+          <div class="photo-crop-viewport" id="photoCropViewport">
+            <img id="editorImageTarget" src="farmer-placeholder.svg" alt="Editing source photo" />
+            <div class="crop-guide-overlay"></div>
+          </div>
+
+          <div class="editor-controls-row">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="rotateEditorPhoto(-90)">↺ Rotate Left</button>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="rotateEditorPhoto(90)">↻ Rotate Right</button>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="resetEditorPhoto()">↺ Reset</button>
+          </div>
+
+          <div class="slider-control" style="width: 100%; max-width: 320px;">
+            <span>🔍 Zoom:</span>
+            <input type="range" id="photoZoomSlider" min="0.5" max="3" step="0.05" value="1" oninput="handlePhotoZoom(this.value)" style="flex: 1;" />
+          </div>
+          <p style="font-size: 0.75rem; color: #64748b; margin: 0;">Tip: Click & drag photo inside frame to reposition.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closePhotoEditorModal()">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="applyPhotoCrop()">Apply Crop & Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. FARMER SIGNATURE MODAL (Draw or Type) -->
+    <div id="signatureModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="sigModalTitle">
+      <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+          <h3 id="sigModalTitle">✍️ Farmer Signature Pad</h3>
+          <button type="button" class="close-btn" onclick="closeSignatureModal()" aria-label="Close modal">×</button>
+        </div>
+        <div class="modal-body">
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <button type="button" class="btn btn-sm btn-outline active" id="btnSigDraw" onclick="switchSigMode('draw')">🖊️ Draw on Pad</button>
+            <button type="button" class="btn btn-sm btn-outline" id="btnSigType" onclick="switchSigMode('type')">⌨️ Type Name</button>
+          </div>
+
+          <!-- Draw Canvas View -->
+          <div id="sigDrawSection">
+            <div class="sig-canvas-wrap">
+              <canvas id="signatureCanvas" width="460" height="150"></canvas>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.75rem; color: #64748b;">Sign with mouse, stylus or finger touch.</span>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="clearSignatureCanvas()">Clear Canvas</button>
+            </div>
+          </div>
+
+          <!-- Type Signature View -->
+          <div id="sigTypeSection" style="display: none;">
+            <div class="field-group" style="margin: 1rem 0;">
+              <label for="sigTypeInput">Type Farmer Name</label>
+              <input id="sigTypeInput" placeholder="Ramesh Patil" oninput="updateTypeSigPreview(this.value)" />
+            </div>
+            <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; padding: 1.5rem; text-align: center;">
+              <span id="sigTypePreview" style="font-family: 'Caveat', cursive; font-size: 2rem; color: #1e293b;">Ramesh Patil</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeSignatureModal()">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="applySignature()">Apply Signature</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. PRINT PREVIEW MODAL (Front & Back Side-by-Side) -->
+    <div id="printPreviewModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="printPreviewTitle">
+      <div class="modal-content print-preview-dialog">
+        <div class="modal-header">
+          <h3 id="printPreviewTitle">🖨️ Kisan Card Print Preview (Dual CR-80 Standard)</h3>
+          <button type="button" class="close-btn" onclick="closePrintPreviewModal()" aria-label="Close modal">×</button>
+        </div>
+        <div class="modal-body" style="padding: 1.25rem;">
+          <div class="print-preview-stage" id="printPreviewStage">
+            <div class="ruler-guide">CR-80 Dimensions: 85.6mm × 53.98mm | Standard Plastic Card Format</div>
+            <!-- Dynamic clones of Front and Back will be rendered here -->
+            <div id="previewFrontSlot"></div>
+            <div id="previewBackSlot"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <span style="font-size: 0.8rem; color: #64748b;">✅ Ready for dual-sided PVC card printers or standard A4 paper.</span>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-secondary btn-sm" onclick="handleDownloadCombinedPDF()">📑 Download Dual PDF</button>
+              <button class="btn btn-primary btn-sm" onclick="triggerPrintFromPreview()">🖨️ Print Now</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closePrintPreviewModal()">Close Preview</button>
+        </div>
+      </div>
+    </div>
 
     <script src="script.js"></script>
   </body>

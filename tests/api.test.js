@@ -276,3 +276,53 @@ test('Backup export and restore API endpoints', async () => {
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test('GET /api/farmers/next-card-number returns next unique sequential ID and handles card templates & signatures', async () => {
+  const app = createApp({ serveStatic: false, dbPath: ':memory:', rateLimit: false });
+  const server = app.listen(0);
+
+  try {
+    const { port } = server.address();
+    const base = 'http://127.0.0.1:' + port;
+    const token = generateToken({ username: 'admin' });
+    const authHeaders = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+
+    // 1. Next card number check
+    const nextRes = await fetch(base + '/api/farmers/next-card-number');
+    assert.equal(nextRes.status, 200);
+    const nextJson = await nextRes.json();
+    assert.ok(nextJson.nextCardNumber.startsWith('KC-'));
+
+    // 2. Create farmer with template, signature, and expired status
+    const createRes = await fetch(base + '/api/farmers', {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({
+        cardNumber: 'KC-9999',
+        farmerName: 'Sanjay Deshmukh',
+        fatherName: 'Vilas Deshmukh',
+        village: 'Takarkheda',
+        address: 'Main Chowk',
+        aadhaar: '987654321012',
+        status: 'expired',
+        issueDate: '2026-10-01',
+        signature: 'text:Sanjay Deshmukh',
+        template: 'sapphire',
+        area: '2.40'
+      })
+    });
+
+    assert.equal(createRes.status, 201);
+    const { farmer } = await createRes.json();
+    assert.equal(farmer.cardNumber, 'KC-9999');
+    assert.equal(farmer.status, 'expired');
+    assert.equal(farmer.template, 'sapphire');
+    assert.equal(farmer.signature, 'text:Sanjay Deshmukh');
+    assert.equal(farmer.issueDate, '2026-10-01');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});

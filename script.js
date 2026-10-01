@@ -1,5 +1,7 @@
 // ==========================================================================
 // KISAN CARD PRO - CLIENT APPLICATION LOGIC
+// Includes: Unique ID generation, Card Status, Issue Date, Digital Signature,
+// Template Selection, Photo Editor (Crop/Rotate/Zoom), PNG/PDF Exports & Print Preview
 // ==========================================================================
 
 const API_BASE = '/api/farmers';
@@ -22,6 +24,31 @@ let registryState = {
 
 let searchDebounceTimer = null;
 let currentLanguage = localStorage.getItem('kisan_lang') || 'en';
+
+// Signature State
+let sigMode = 'draw';
+let isDrawing = false;
+let currentSignatureData = null; // { type: 'image' | 'text', data: '...' }
+
+// Photo Editor State
+let photoEditorState = {
+  imgSrc: defaultPhotoSrc,
+  rotation: 0,
+  zoom: 1,
+  panX: 0,
+  panY: 0,
+  isDragging: false,
+  dragStartX: 0,
+  dragStartY: 0
+};
+
+// Current Card State
+let currentCardState = {
+  template: 'emerald',
+  status: 'active',
+  issueDate: new Date().toISOString().slice(0, 10),
+  signature: ''
+};
 
 // ==========================================================================
 // BILINGUAL TRANSLATION DICTIONARY (ENGLISH & MARATHI)
@@ -425,6 +452,485 @@ async function handleProtectedNavigation(targetView) {
       switchView(targetView);
     });
   }
+}
+
+// ==========================================================================
+// 1. UNIQUE CARD NUMBER AUTO GENERATION
+// ==========================================================================
+async function fetchNextCardNumber() {
+  try {
+    const res = await fetch(`${API_BASE}/next-card-number`);
+    if (!res.ok) throw new Error('Failed to fetch next number');
+    const data = await res.json();
+    return data.nextCardNumber || 'KC-1001';
+  } catch (err) {
+    return 'KC-' + Math.floor(1000 + Math.random() * 9000);
+  }
+}
+
+async function autoGenCardNumber() {
+  const nextId = await fetchNextCardNumber();
+  document.getElementById('cardInput').value = nextId;
+  setID(nextId);
+}
+
+// ==========================================================================
+// 2. CARD STATUS (Active / Pending / Expired)
+// ==========================================================================
+function setCardStatus(status) {
+  currentCardState.status = status;
+  const badge = document.getElementById('cardStatusBadge');
+  if (!badge) return;
+
+  badge.className = 'card-status-badge';
+  if (status === 'active') {
+    badge.classList.add('card-status-active');
+    badge.innerText = 'ACTIVE';
+  } else if (status === 'pending') {
+    badge.classList.add('card-status-pending');
+    badge.innerText = 'PENDING';
+  } else if (status === 'expired') {
+    badge.classList.add('card-status-expired');
+    badge.innerText = 'EXPIRED';
+  }
+}
+
+// ==========================================================================
+// 3. ISSUE DATE & VALIDITY
+// ==========================================================================
+function setIssueDate(dateStr) {
+  if (!dateStr) return;
+  currentCardState.issueDate = dateStr;
+  const [year, month, day] = dateStr.split('-');
+  const formatted = `${day}/${month}/${year}`;
+
+  const issueEl = document.getElementById('cardIssueDate');
+  if (issueEl) issueEl.innerText = `Issued: ${formatted}`;
+
+  const expiryYear = Number(year) + 5;
+  const validThruEl = document.getElementById('cardValidThru');
+  if (validThruEl) validThruEl.innerText = `Valid: ${year}-${expiryYear}`;
+}
+
+// ==========================================================================
+// 4. CARD TEMPLATE SELECTION
+// ==========================================================================
+function setCardTemplate(theme) {
+  currentCardState.template = theme;
+  const cardFront = document.getElementById('card');
+  const cardBack = document.getElementById('cardBack');
+
+  const themes = ['theme-emerald', 'theme-sapphire', 'theme-tricolor', 'theme-midnight'];
+  themes.forEach(t => {
+    cardFront?.classList.remove(t);
+    cardBack?.classList.remove(t);
+  });
+
+  const activeThemeClass = `theme-${theme}`;
+  cardFront?.classList.add(activeThemeClass);
+  cardBack?.classList.add(activeThemeClass);
+
+  // Update button active styles
+  document.querySelectorAll('.template-btn').forEach(btn => btn.classList.remove('active'));
+  const btnId = `tpl${theme.charAt(0).toUpperCase() + theme.slice(1)}`;
+  const activeBtn = document.getElementById(btnId);
+  if (activeBtn) activeBtn.classList.add('active');
+}
+
+// ==========================================================================
+// 5. FARMER SIGNATURE ENGINE (Canvas Draw & Font Type)
+// ==========================================================================
+function initSignatureCanvas() {
+  const canvas = document.getElementById('signatureCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height)
+    };
+  }
+
+  function startDraw(e) {
+    e.preventDefault();
+    isDrawing = true;
+    const pos = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+  }
+
+  function drawMove(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const pos = getPos(e);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  }
+
+  function stopDraw(e) {
+    if (isDrawing) {
+      ctx.closePath();
+      isDrawing = false;
+    }
+  }
+
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mousemove', drawMove);
+  canvas.addEventListener('mouseup', stopDraw);
+  canvas.addEventListener('mouseleave', stopDraw);
+
+  canvas.addEventListener('touchstart', startDraw, { passive: false });
+  canvas.addEventListener('touchmove', drawMove, { passive: false });
+  canvas.addEventListener('touchend', stopDraw);
+}
+
+function switchSigMode(mode) {
+  sigMode = mode;
+  const drawSec = document.getElementById('sigDrawSection');
+  const typeSec = document.getElementById('sigTypeSection');
+  const btnDraw = document.getElementById('btnSigDraw');
+  const btnType = document.getElementById('btnSigType');
+
+  if (mode === 'draw') {
+    drawSec.style.display = 'block';
+    typeSec.style.display = 'none';
+    btnDraw.classList.add('active');
+    btnType.classList.remove('active');
+  } else {
+    drawSec.style.display = 'none';
+    typeSec.style.display = 'block';
+    btnDraw.classList.remove('active');
+    btnType.classList.add('active');
+    const farmerName = document.getElementById('nameInput')?.value.trim() || 'Ramesh Patil';
+    const typeInp = document.getElementById('sigTypeInput');
+    if (typeInp) typeInp.value = farmerName;
+    updateTypeSigPreview(farmerName);
+  }
+}
+
+function updateTypeSigPreview(val) {
+  const prev = document.getElementById('sigTypePreview');
+  if (prev) prev.innerText = val || 'Ramesh Patil';
+}
+
+function clearSignatureCanvas() {
+  const canvas = document.getElementById('signatureCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function openSignatureModal() {
+  const modal = document.getElementById('signatureModal');
+  modal.classList.add('active');
+  setTimeout(initSignatureCanvas, 100);
+}
+
+function closeSignatureModal() {
+  const modal = document.getElementById('signatureModal');
+  modal.classList.remove('active');
+}
+
+function applySignature() {
+  const sigBox = document.getElementById('cardSignatureBox');
+  const sigImg = document.getElementById('cardSigImg');
+  const sigText = document.getElementById('cardSigText');
+  const sigStatus = document.getElementById('sigStatusLabel');
+
+  if (sigMode === 'draw') {
+    const canvas = document.getElementById('signatureCanvas');
+    const dataUrl = canvas.toDataURL('image/png');
+    currentSignatureData = { type: 'image', data: dataUrl };
+    currentCardState.signature = dataUrl;
+
+    sigImg.src = dataUrl;
+    sigImg.style.display = 'block';
+    sigText.style.display = 'none';
+    sigBox.style.display = 'flex';
+    if (sigStatus) sigStatus.innerText = '✅ Custom drawn signature applied';
+  } else {
+    const textVal = document.getElementById('sigTypeInput').value.trim() || 'Ramesh Patil';
+    currentSignatureData = { type: 'text', data: textVal };
+    currentCardState.signature = `text:${textVal}`;
+
+    sigText.innerText = textVal;
+    sigText.style.display = 'block';
+    sigImg.style.display = 'none';
+    sigBox.style.display = 'flex';
+    if (sigStatus) sigStatus.innerText = `✅ Typed signature ("${textVal}") applied`;
+  }
+
+  closeSignatureModal();
+}
+
+function clearSignature() {
+  currentSignatureData = null;
+  currentCardState.signature = '';
+  const sigBox = document.getElementById('cardSignatureBox');
+  const sigImg = document.getElementById('cardSigImg');
+  const sigText = document.getElementById('cardSigText');
+  const sigStatus = document.getElementById('sigStatusLabel');
+
+  if (sigImg) sigImg.src = '';
+  if (sigText) sigText.innerText = '';
+  if (sigBox) sigBox.style.display = 'none';
+  if (sigStatus) sigStatus.innerText = 'No signature added';
+}
+
+// ==========================================================================
+// 6. PHOTO EDITOR (Crop, Rotate, Zoom, Pan & Reposition)
+// ==========================================================================
+function openPhotoEditorModal() {
+  const photoEl = document.getElementById('photo');
+  photoEditorState.imgSrc = photoEl.src || defaultPhotoSrc;
+  photoEditorState.rotation = 0;
+  photoEditorState.zoom = 1;
+  photoEditorState.panX = 0;
+  photoEditorState.panY = 0;
+
+  const target = document.getElementById('editorImageTarget');
+  target.src = photoEditorState.imgSrc;
+  document.getElementById('photoZoomSlider').value = '1';
+  updateEditorTransform();
+
+  const modal = document.getElementById('photoEditorModal');
+  modal.classList.add('active');
+  initPhotoEditorDragging();
+}
+
+function closePhotoEditorModal() {
+  const modal = document.getElementById('photoEditorModal');
+  modal.classList.remove('active');
+}
+
+function rotateEditorPhoto(deg) {
+  photoEditorState.rotation = (photoEditorState.rotation + deg) % 360;
+  updateEditorTransform();
+}
+
+function handlePhotoZoom(val) {
+  photoEditorState.zoom = parseFloat(val) || 1;
+  updateEditorTransform();
+}
+
+function resetEditorPhoto() {
+  photoEditorState.rotation = 0;
+  photoEditorState.zoom = 1;
+  photoEditorState.panX = 0;
+  photoEditorState.panY = 0;
+  document.getElementById('photoZoomSlider').value = '1';
+  updateEditorTransform();
+}
+
+function updateEditorTransform() {
+  const target = document.getElementById('editorImageTarget');
+  if (!target) return;
+  target.style.transform = `translate(${photoEditorState.panX}px, ${photoEditorState.panY}px) rotate(${photoEditorState.rotation}deg) scale(${photoEditorState.zoom})`;
+}
+
+function initPhotoEditorDragging() {
+  const viewport = document.getElementById('photoCropViewport');
+  if (!viewport || viewport.dataset.init === 'true') return;
+  viewport.dataset.init = 'true';
+
+  viewport.addEventListener('mousedown', e => {
+    photoEditorState.isDragging = true;
+    photoEditorState.dragStartX = e.clientX - photoEditorState.panX;
+    photoEditorState.dragStartY = e.clientY - photoEditorState.panY;
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (!photoEditorState.isDragging) return;
+    photoEditorState.panX = e.clientX - photoEditorState.dragStartX;
+    photoEditorState.panY = e.clientY - photoEditorState.dragStartY;
+    updateEditorTransform();
+  });
+
+  window.addEventListener('mouseup', () => {
+    photoEditorState.isDragging = false;
+  });
+}
+
+function applyPhotoCrop() {
+  const target = document.getElementById('editorImageTarget');
+  const canvas = document.createElement('canvas');
+  canvas.width = 320;
+  canvas.height = 400;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+  ctx.translate(canvas.width / 2 + photoEditorState.panX, canvas.height / 2 + photoEditorState.panY);
+  ctx.rotate((photoEditorState.rotation * Math.PI) / 180);
+  ctx.scale(photoEditorState.zoom, photoEditorState.zoom);
+
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    ctx.drawImage(img, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+    ctx.restore();
+
+    const croppedUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const photoEl = document.getElementById('photo');
+    const thumbEl = document.getElementById('formPhotoThumb');
+
+    photoEl.src = croppedUrl;
+    photoEl.dataset.custom = 'true';
+    if (thumbEl) thumbEl.src = croppedUrl;
+    document.getElementById('photoName').innerText = 'Cropped & edited photo';
+    closePhotoEditorModal();
+  };
+  img.src = target.src;
+}
+
+// ==========================================================================
+// 7. PRINT PREVIEW MODAL (Front & Back Side-by-Side)
+// ==========================================================================
+function openPrintPreviewModal() {
+  const modal = document.getElementById('printPreviewModal');
+  const frontSlot = document.getElementById('previewFrontSlot');
+  const backSlot = document.getElementById('previewBackSlot');
+
+  const cardFront = document.getElementById('card');
+  const cardBack = document.getElementById('cardBack');
+
+  frontSlot.innerHTML = '';
+  backSlot.innerHTML = '';
+
+  const cloneFront = cardFront.cloneNode(true);
+  const cloneBack = cardBack.cloneNode(true);
+
+  cloneFront.style.transform = 'scale(1)';
+  cloneBack.style.transform = 'scale(1)';
+  cloneFront.style.margin = '0';
+  cloneBack.style.margin = '0';
+
+  frontSlot.appendChild(cloneFront);
+  backSlot.appendChild(cloneBack);
+
+  modal.classList.add('active');
+}
+
+function closePrintPreviewModal() {
+  const modal = document.getElementById('printPreviewModal');
+  modal.classList.remove('active');
+}
+
+function triggerPrintFromPreview() {
+  closePrintPreviewModal();
+  setTimeout(() => window.print(), 150);
+}
+
+// ==========================================================================
+// 8. HIGH-DPI DOWNLOAD OPTIONS (PDF & PNG EXPORTS)
+// ==========================================================================
+async function handleDownloadCombinedPDF() {
+  const btn = document.getElementById('downloadCombinedBtn');
+  const origText = btn ? btn.innerText : 'Dual PDF';
+  if (btn) btn.innerText = 'Generating...';
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const cardFront = document.getElementById('card');
+    const cardBack = document.getElementById('cardBack');
+
+    const canvasFront = await html2canvas(cardFront, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+    const canvasBack = await html2canvas(cardBack, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgDataFront = canvasFront.toDataURL('image/png');
+    const imgDataBack = canvasBack.toDataURL('image/png');
+
+    pdf.addImage(imgDataFront, 'PNG', 35, 30, 140, 88.2);
+    pdf.addImage(imgDataBack, 'PNG', 35, 130, 140, 88.2);
+
+    const cardId = document.getElementById('fid')?.innerText || 'KC-1001';
+    pdf.save(`Kisan_Card_Dual_${cardId}.pdf`);
+  } catch (err) {
+    alert('PDF Generation failed: ' + err.message);
+  } finally {
+    if (btn) btn.innerText = origText;
+  }
+}
+
+async function handleDownloadFrontPDF() {
+  const cardFront = document.getElementById('card');
+  const canvas = await html2canvas(cardFront, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('l', 'mm', [85.6, 53.98]);
+  pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 85.6, 53.98);
+  const cardId = document.getElementById('fid')?.innerText || 'KC-1001';
+  pdf.save(`Kisan_Card_Front_${cardId}.pdf`);
+}
+
+async function handleDownloadBackPDF() {
+  const cardBack = document.getElementById('cardBack');
+  const canvas = await html2canvas(cardBack, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('l', 'mm', [85.6, 53.98]);
+  pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 85.6, 53.98);
+  const cardId = document.getElementById('fid')?.innerText || 'KC-1001';
+  pdf.save(`Kisan_Card_Back_${cardId}.pdf`);
+}
+
+async function handleDownloadFrontPNG() {
+  const cardFront = document.getElementById('card');
+  const canvas = await html2canvas(cardFront, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+  const link = document.createElement('a');
+  const cardId = document.getElementById('fid')?.innerText || 'KC-1001';
+  link.download = `Kisan_Card_Front_${cardId}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+async function handleDownloadBackPNG() {
+  const cardBack = document.getElementById('cardBack');
+  const canvas = await html2canvas(cardBack, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+  const link = document.createElement('a');
+  const cardId = document.getElementById('fid')?.innerText || 'KC-1001';
+  link.download = `Kisan_Card_Back_${cardId}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+async function handleDownloadCombinedPNG() {
+  const cardFront = document.getElementById('card');
+  const cardBack = document.getElementById('cardBack');
+
+  const canvasFront = await html2canvas(cardFront, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+  const canvasBack = await html2canvas(cardBack, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+
+  const totalCanvas = document.createElement('canvas');
+  const padding = 30;
+  totalCanvas.width = canvasFront.width + canvasBack.width + padding * 3;
+  totalCanvas.height = Math.max(canvasFront.height, canvasBack.height) + padding * 2;
+  const ctx = totalCanvas.getContext('2d');
+
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(0, 0, totalCanvas.width, totalCanvas.height);
+
+  ctx.drawImage(canvasFront, padding, padding);
+  ctx.drawImage(canvasBack, canvasFront.width + padding * 2, padding);
+
+  const link = document.createElement('a');
+  const cardId = document.getElementById('fid')?.innerText || 'KC-1001';
+  link.download = `Kisan_Card_Combined_${cardId}.png`;
+  link.href = totalCanvas.toDataURL('image/png');
+  link.click();
+}
+
+function handlePrint() {
+  window.print();
 }
 
 // ==========================================================================
@@ -853,9 +1359,13 @@ function renderRegistry(farmers) {
   }
 
   tbody.innerHTML = farmers.map(f => {
-    const statusPill = f.status === 'inactive'
-      ? `<span class="status-pill status-inactive">Pending</span>`
-      : `<span class="status-pill status-active">Active</span>`;
+    let statusPill = `<span class="status-pill status-active">Active</span>`;
+    if (f.status === 'inactive' || f.status === 'pending') {
+      statusPill = `<span class="status-pill status-inactive">Pending</span>`;
+    } else if (f.status === 'expired') {
+      statusPill = `<span class="status-pill" style="background:#fee2e2; color:#b91c1c;">Expired</span>`;
+    }
+
     return `
       <tr>
         <td><span class="card-id-pill">${escapeHtml(f.cardNumber || 'KC-0000')}</span></td>
@@ -927,6 +1437,8 @@ async function loadFarmerIntoStudio(id) {
 
 function populateStudioWithFarmer(f) {
   document.getElementById('cardInput').value = f.cardNumber || '';
+  document.getElementById('statusInput').value = f.status || 'active';
+  document.getElementById('issueDateInput').value = f.issueDate || new Date().toISOString().slice(0, 10);
   document.getElementById('nameInput').value = f.farmerName || '';
   document.getElementById('nameMrInput').value = f.farmerNameMr || '';
   document.getElementById('fatherInput').value = f.fatherName || '';
@@ -940,6 +1452,10 @@ function populateStudioWithFarmer(f) {
 
   // Synchronize Live Card Display
   setID(f.cardNumber);
+  setCardStatus(f.status || 'active');
+  setIssueDate(f.issueDate || new Date().toISOString().slice(0, 10));
+  setCardTemplate(f.template || 'emerald');
+
   document.getElementById('name_en').innerText = f.farmerName || 'Ramesh Patil';
   document.getElementById('name_mr').innerText = f.farmerNameMr || 'रमेश पाटील';
   document.getElementById('father_en').innerText = f.fatherName || 'Suresh Patil';
@@ -951,6 +1467,31 @@ function populateStudioWithFarmer(f) {
   document.getElementById('sub').innerText = f.subSurvey || '2';
   document.getElementById('area').innerText = f.area || '1.08';
 
+  // Signature
+  if (f.signature) {
+    const sigBox = document.getElementById('cardSignatureBox');
+    const sigImg = document.getElementById('cardSigImg');
+    const sigText = document.getElementById('cardSigText');
+    const sigStatus = document.getElementById('sigStatusLabel');
+
+    if (f.signature.startsWith('text:')) {
+      const textVal = f.signature.slice(5);
+      sigText.innerText = textVal;
+      sigText.style.display = 'block';
+      sigImg.style.display = 'none';
+      if (sigStatus) sigStatus.innerText = `✅ Typed signature: "${textVal}"`;
+    } else {
+      sigImg.src = f.signature;
+      sigImg.style.display = 'block';
+      sigText.style.display = 'none';
+      if (sigStatus) sigStatus.innerText = '✅ Saved signature loaded';
+    }
+    sigBox.style.display = 'flex';
+  } else {
+    clearSignature();
+  }
+
+  // Photo
   const photoEl = document.getElementById('photo');
   const thumbEl = document.getElementById('formPhotoThumb');
   if (f.photo) {
@@ -974,6 +1515,10 @@ async function saveFarmer() {
 
   const farmerData = {
     cardNumber: document.getElementById('cardInput').value.trim() || undefined,
+    status: document.getElementById('statusInput').value || 'active',
+    issueDate: document.getElementById('issueDateInput').value || new Date().toISOString().slice(0, 10),
+    template: currentCardState.template || 'emerald',
+    signature: currentCardState.signature || '',
     farmerName: document.getElementById('nameInput').value.trim(),
     farmerNameMr: document.getElementById('nameMrInput').value.trim(),
     fatherName: document.getElementById('fatherInput').value.trim(),
@@ -983,8 +1528,7 @@ async function saveFarmer() {
     village: document.getElementById('villageInput').value.trim(),
     survey: document.getElementById('surveyInput').value.trim(),
     subSurvey: document.getElementById('subSurveyInput').value.trim(),
-    area: document.getElementById('areaInput').value.trim(),
-    status: 'active'
+    area: document.getElementById('areaInput').value.trim()
   };
 
   const photoEl = document.getElementById('photo');
@@ -1037,8 +1581,12 @@ async function deleteFarmerRecord(id) {
   }
 }
 
-function clearForm() {
-  document.getElementById('cardInput').value = '';
+async function clearForm() {
+  const nextId = await fetchNextCardNumber();
+  document.getElementById('cardInput').value = nextId;
+  document.getElementById('statusInput').value = 'active';
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('issueDateInput').value = today;
   document.getElementById('nameInput').value = '';
   document.getElementById('nameMrInput').value = '';
   document.getElementById('fatherInput').value = '';
@@ -1051,7 +1599,12 @@ function clearForm() {
   document.getElementById('areaInput').value = '';
   document.getElementById('validationErrors').innerHTML = '';
 
-  setID('KC-1001');
+  setID(nextId);
+  setCardStatus('active');
+  setIssueDate(today);
+  setCardTemplate('emerald');
+  clearSignature();
+
   document.getElementById('name_en').innerText = 'Ramesh Patil';
   document.getElementById('name_mr').innerText = 'रमेश पाटील';
   document.getElementById('father_en').innerText = 'Suresh Patil';
@@ -1071,7 +1624,7 @@ function clearForm() {
 }
 
 // ==========================================================================
-// EXPORT & PRINT HANDLERS
+// EXPORT & RESTORE HANDLERS
 // ==========================================================================
 async function exportCSV() {
   try {
@@ -1133,62 +1686,6 @@ async function handleRestoreFile(event) {
   reader.readAsText(file);
 }
 
-// ==========================================================================
-// HIGH-DPI PDF GENERATION & PRINT
-// ==========================================================================
-async function handleDownloadCombined() {
-  const btn = document.getElementById('downloadCombinedBtn');
-  const origText = btn.innerText;
-  btn.innerText = 'Generating PDF...';
-
-  try {
-    const { jsPDF } = window.jspdf;
-    const cardFront = document.getElementById('card');
-    const cardBack = document.getElementById('cardBack');
-
-    const canvasFront = await html2canvas(cardFront, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
-    const canvasBack = await html2canvas(cardBack, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
-
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgDataFront = canvasFront.toDataURL('image/png');
-    const imgDataBack = canvasBack.toDataURL('image/png');
-
-    pdf.addImage(imgDataFront, 'PNG', 35, 30, 140, 88.2);
-    pdf.addImage(imgDataBack, 'PNG', 35, 130, 140, 88.2);
-
-    const cardId = document.getElementById('fid').innerText || 'KC-1001';
-    pdf.save(`Kisan_Card_Dual_${cardId}.pdf`);
-  } catch (err) {
-    alert('PDF Generation failed: ' + err.message);
-  } finally {
-    btn.innerText = origText;
-  }
-}
-
-async function handleDownload() {
-  const cardFront = document.getElementById('card');
-  const canvas = await html2canvas(cardFront, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF('l', 'mm', [85.6, 53.98]);
-  pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 85.6, 53.98);
-  const cardId = document.getElementById('fid').innerText || 'KC-1001';
-  pdf.save(`Kisan_Card_Front_${cardId}.pdf`);
-}
-
-async function handleDownloadBack() {
-  const cardBack = document.getElementById('cardBack');
-  const canvas = await html2canvas(cardBack, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF('l', 'mm', [85.6, 53.98]);
-  pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 85.6, 53.98);
-  const cardId = document.getElementById('fid').innerText || 'KC-1001';
-  pdf.save(`Kisan_Card_Back_${cardId}.pdf`);
-}
-
-function handlePrint() {
-  window.print();
-}
-
 function escapeHtml(str) {
   if (!str) return '';
   return String(str)
@@ -1230,5 +1727,15 @@ document.addEventListener('DOMContentLoaded', () => {
   updateLanguageUI();
   checkAuthStatus();
   loadDashboardStats();
-  setID('KC-1001');
+
+  const today = new Date().toISOString().slice(0, 10);
+  const dateInput = document.getElementById('issueDateInput');
+  if (dateInput) dateInput.value = today;
+  setIssueDate(today);
+
+  fetchNextCardNumber().then(id => {
+    const cardInp = document.getElementById('cardInput');
+    if (cardInp && !cardInp.value) cardInp.value = id;
+    setID(id);
+  });
 });

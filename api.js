@@ -46,6 +46,9 @@ function initSchema(db) {
       area TEXT DEFAULT '0',
       aadhaar TEXT DEFAULT '',
       status TEXT DEFAULT 'active',
+      issueDate TEXT DEFAULT '',
+      signature TEXT DEFAULT '',
+      template TEXT DEFAULT 'emerald',
       photo TEXT DEFAULT '',
       createdAt TEXT NOT NULL
     );
@@ -53,6 +56,20 @@ function initSchema(db) {
     CREATE INDEX IF NOT EXISTS idx_farmers_village ON farmers(village);
     CREATE INDEX IF NOT EXISTS idx_farmers_status ON farmers(status);
   `);
+
+  // Auto-migrate new columns for existing tables if needed
+  try {
+    const existingCols = db.prepare("PRAGMA table_info(farmers)").all().map(c => c.name);
+    if (!existingCols.includes('issueDate')) {
+      try { db.exec("ALTER TABLE farmers ADD COLUMN issueDate TEXT DEFAULT ''"); } catch (e) {}
+    }
+    if (!existingCols.includes('signature')) {
+      try { db.exec("ALTER TABLE farmers ADD COLUMN signature TEXT DEFAULT ''"); } catch (e) {}
+    }
+    if (!existingCols.includes('template')) {
+      try { db.exec("ALTER TABLE farmers ADD COLUMN template TEXT DEFAULT 'emerald'"); } catch (e) {}
+    }
+  } catch (err) {}
 }
 
 function migrateJsonIfEmpty(db) {
@@ -293,6 +310,12 @@ function generateCardNumber(existing = []) {
 }
 
 function normalizeFarmerData(input = {}) {
+  const rawStatus = String(input.status || 'active').trim().toLowerCase();
+  const validStatus = ['active', 'inactive', 'pending', 'expired'].includes(rawStatus) ? rawStatus : 'active';
+  const issueDate = String(input.issueDate || new Date().toISOString().slice(0, 10)).trim();
+  const signature = String(input.signature || '').trim();
+  const template = String(input.template || 'emerald').trim().toLowerCase();
+
   const base = {
     farmerName: '',
     farmerNameMr: '',
@@ -306,6 +329,9 @@ function normalizeFarmerData(input = {}) {
     aadhaar: '',
     cardNumber: '',
     status: 'active',
+    issueDate,
+    signature,
+    template,
     photo: '',
     createdAt: new Date().toISOString()
   };
@@ -324,7 +350,10 @@ function normalizeFarmerData(input = {}) {
     area: String(input.area || '').trim(),
     aadhaar: formatAadhaar(input.aadhaar || input.aadhaarNumber || ''),
     cardNumber: String(input.cardNumber || '').trim() || '',
-    status: String(input.status || 'active').trim().toLowerCase() === 'inactive' ? 'inactive' : 'active',
+    status: validStatus,
+    issueDate: String(input.issueDate || issueDate).trim(),
+    signature: String(input.signature || signature).trim(),
+    template: String(input.template || template).trim(),
     photo: String(input.photo || '').trim(),
     createdAt: input.createdAt || new Date().toISOString()
   };
@@ -798,6 +827,13 @@ function createApp(options = {}) {
         code: 'RESTORE_FAILED'
       });
     }
+  });
+
+    // Next Card Number Generation Endpoint
+  app.get('/api/farmers/next-card-number', (_req, res) => {
+    const allFarmers = readAllFarmers(db);
+    const nextCardNumber = generateCardNumber(allFarmers);
+    return res.json({ nextCardNumber, success: true });
   });
 
   app.get('/api/farmers', authMiddleware, (req, res) => {
