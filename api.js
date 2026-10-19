@@ -704,6 +704,86 @@ function createApp(options = {}) {
     res.json({ stats: getStats(db) });
   });
 
+  app.get('/api/reports/summary', authMiddleware, (req, res) => {
+    const { from, to, village } = req.query;
+    const isValidDate = (value) => {
+      if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+      return new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value;
+    };
+
+    if ((from !== undefined && !isValidDate(from)) || (to !== undefined && !isValidDate(to))) {
+      return res.status(400).json({ error: 'Report dates must be valid YYYY-MM-DD dates.' });
+    }
+    if (from && to && from > to) {
+      return res.status(400).json({ error: 'The start date must be on or before the end date.' });
+    }
+    if (village !== undefined && (typeof village !== 'string' || village.length > 100)) {
+      return res.status(400).json({ error: 'Village filter must be 100 characters or fewer.' });
+    }
+
+    const normalizedVillage = String(village || '').trim().toLocaleLowerCase();
+    const farmers = readAllFarmers(db).filter((farmer) => {
+      const registeredOn = String(farmer.createdAt || '').slice(0, 10);
+      if ((from || to) && !isValidDate(registeredOn)) return false;
+      if (from && registeredOn < from) return false;
+      if (to && registeredOn > to) return false;
+      return !normalizedVillage || String(farmer.village || '').trim().toLocaleLowerCase() === normalizedVillage;
+    });
+
+    const villageMap = new Map();
+    let activeFarmers = 0;
+    let pendingFarmers = 0;
+    let expiredFarmers = 0;
+    let totalAreaHectare = 0;
+
+    farmers.forEach((farmer) => {
+      const name = String(farmer.village || '').trim() || 'Unassigned';
+      const area = Number.parseFloat(farmer.area) || 0;
+      const status = String(farmer.status || '').toLowerCase();
+      totalAreaHectare += area;
+      if (status === 'active') activeFarmers += 1;
+      else if (status === 'pending' || status === 'inactive') pendingFarmers += 1;
+      else if (status === 'expired') expiredFarmers += 1;
+
+      const key = name.toLocaleLowerCase();
+      if (!villageMap.has(key)) {
+        villageMap.set(key, {
+          village: name,
+          totalFarmers: 0,
+          activeFarmers: 0,
+          pendingFarmers: 0,
+          expiredFarmers: 0,
+          totalAreaHectare: 0
+        });
+      }
+      const entry = villageMap.get(key);
+      entry.totalFarmers += 1;
+      entry.totalAreaHectare += area;
+      if (status === 'active') entry.activeFarmers += 1;
+      else if (status === 'pending' || status === 'inactive') entry.pendingFarmers += 1;
+      else if (status === 'expired') entry.expiredFarmers += 1;
+    });
+
+    const villages = [...villageMap.values()]
+      .map((entry) => ({
+        ...entry,
+        totalAreaHectare: Number(entry.totalAreaHectare.toFixed(2))
+      }))
+      .sort((a, b) => a.village.localeCompare(b.village));
+
+    res.json({
+      report: {
+        filters: { from: from || '', to: to || '', village: String(village || '').trim() },
+        totalFarmers: farmers.length,
+        activeFarmers,
+        pendingFarmers,
+        expiredFarmers,
+        totalAreaHectare: Number(totalAreaHectare.toFixed(2)),
+        villages
+      }
+    });
+  });
+
   // Authentication with Login Rate Limiting (30 attempts / 5 mins)
   app.post('/api/auth/login', rateLimit({ windowMs: 5 * 60 * 1000, max: 30, message: 'Too many login attempts. Please wait 5 minutes.' }), (req, res) => {
     const { username, password } = req.body || {};

@@ -61,6 +61,11 @@
 * **Authentication**: Token-based administrator login with brute-force rate limiting (15 attempts / 5 mins).
 * **Data Validation**: Strict Aadhaar 12-digit checks, boundary limits on land area, and sanitized inputs.
 
+### 8. 📈 Village & Registration Reports
+* **Registration Date Filters**: Report by an inclusive start/end registration date range and optionally filter to a village.
+* **Village Summary**: Review farmer totals, active, pending and expired card counts, and total land area per village.
+* **CSV Export**: Download the current filtered village summary without exporting personal farmer data. Reports require staff sign-in.
+
 ---
 
 ## 🚀 Getting Started

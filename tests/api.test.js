@@ -137,6 +137,63 @@ test('GET /health returns SQLite database status', async () => {
   }
 });
 
+test('GET /api/reports/summary requires authentication and aggregates filtered village registrations', async () => {
+  const app = createApp({ serveStatic: false, dbPath: ':memory:', rateLimit: false });
+  const server = app.listen(0);
+
+  try {
+    const { port } = server.address();
+    const base = 'http://127.0.0.1:' + port;
+    const token = generateToken({ username: 'admin' });
+    const authHeaders = { Authorization: `Bearer ${token}` };
+    const registrations = [
+      { cardNumber: 'KC-7001', farmerName: 'Report Farmer One', fatherName: 'Parent One', village: 'Nashik', address: 'Ward 1', area: '1.25', status: 'active', createdAt: '2026-04-01T10:00:00.000Z' },
+      { cardNumber: 'KC-7002', farmerName: 'Report Farmer Two', fatherName: 'Parent Two', village: 'Nashik', address: 'Ward 2', area: '2', status: 'pending', createdAt: '2026-04-30T10:00:00.000Z' },
+      { cardNumber: 'KC-7003', farmerName: 'Report Farmer Three', fatherName: 'Parent Three', village: 'Pune', address: 'Ward 3', area: '3', status: 'expired', createdAt: '2026-05-01T10:00:00.000Z' }
+    ];
+
+    for (const registration of registrations) {
+      const createRes = await fetch(base + '/api/farmers', {
+        method: 'POST',
+        headers: { ...authHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify(registration)
+      });
+      assert.equal(createRes.status, 201);
+    }
+
+    const unauthorizedRes = await fetch(base + '/api/reports/summary');
+    assert.equal(unauthorizedRes.status, 401);
+
+    const reportRes = await fetch(
+      base + '/api/reports/summary?from=2026-04-01&to=2026-04-30&village=nAsHiK',
+      { headers: authHeaders }
+    );
+    assert.equal(reportRes.status, 200);
+    const { report } = await reportRes.json();
+    assert.equal(report.totalFarmers, 2);
+    assert.equal(report.activeFarmers, 1);
+    assert.equal(report.pendingFarmers, 1);
+    assert.equal(report.expiredFarmers, 0);
+    assert.equal(report.totalAreaHectare, 3.25);
+    assert.deepEqual(report.villages, [{
+      village: 'Nashik',
+      totalFarmers: 2,
+      activeFarmers: 1,
+      pendingFarmers: 1,
+      expiredFarmers: 0,
+      totalAreaHectare: 3.25
+    }]);
+    assert.equal(JSON.stringify(report).includes('Report Farmer'), false);
+
+    const invalidDateRes = await fetch(base + '/api/reports/summary?from=2026-02-30', { headers: authHeaders });
+    assert.equal(invalidDateRes.status, 400);
+    const reversedRangeRes = await fetch(base + '/api/reports/summary?from=2026-05-01&to=2026-04-01', { headers: authHeaders });
+    assert.equal(reversedRangeRes.status, 400);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
 test('POST /api/auth/login authenticates admin and rejects invalid password', async () => {
   const app = createApp({ serveStatic: false, dbPath: ':memory:', rateLimit: false });
   const server = app.listen(0);

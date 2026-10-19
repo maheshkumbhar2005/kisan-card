@@ -160,6 +160,60 @@
           </div>
         </div>
       </div>
+
+      <section class="analytics-card reports-card" aria-labelledby="reportsTitle">
+        <div class="card-head-flex">
+          <div>
+            <h3 id="reportsTitle">📈 Village & Registration Reports</h3>
+            <p class="text-muted">Filter farmer registrations by registration date and village.</p>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline" id="reportExportBtn" onclick="exportVillageReport()" disabled>
+            Export CSV
+          </button>
+        </div>
+        <form class="report-filters" onsubmit="event.preventDefault(); loadVillageReport();">
+          <div class="field-group">
+            <label for="reportFromDate">From registration date</label>
+            <input id="reportFromDate" type="date" />
+          </div>
+          <div class="field-group">
+            <label for="reportToDate">Through registration date</label>
+            <input id="reportToDate" type="date" />
+          </div>
+          <div class="field-group">
+            <label for="reportVillage">Village (optional)</label>
+            <input id="reportVillage" maxlength="100" placeholder="All villages" />
+          </div>
+          <button type="submit" class="btn btn-primary">Generate Report</button>
+        </form>
+        <p id="reportMessage" class="report-message text-muted" role="status" aria-live="polite">
+          Sign in to generate a report.
+        </p>
+        <div id="reportResults" hidden>
+          <div class="report-summary" aria-live="polite">
+            <div><span>Total farmers</span><strong id="reportTotalFarmers">0</strong></div>
+            <div><span>Active</span><strong id="reportActiveFarmers">0</strong></div>
+            <div><span>Pending</span><strong id="reportPendingFarmers">0</strong></div>
+            <div><span>Expired</span><strong id="reportExpiredFarmers">0</strong></div>
+            <div><span>Land (ha)</span><strong id="reportTotalArea">0.00</strong></div>
+          </div>
+          <div class="table-responsive">
+            <table class="registry-table">
+              <thead>
+                <tr>
+                  <th scope="col">Village</th>
+                  <th scope="col">Farmers</th>
+                  <th scope="col">Active</th>
+                  <th scope="col">Pending</th>
+                  <th scope="col">Expired</th>
+                  <th scope="col">Land (ha)</th>
+                </tr>
+              </thead>
+              <tbody id="reportVillageRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
     </section>
 
     <!-- ==========================================================================

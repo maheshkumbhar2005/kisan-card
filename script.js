@@ -1118,6 +1118,93 @@ async function loadDashboardStats() {
   }
 }
 
+let currentVillageReport = null;
+
+async function loadVillageReport() {
+  const from = document.getElementById('reportFromDate').value;
+  const to = document.getElementById('reportToDate').value;
+  const village = document.getElementById('reportVillage').value.trim();
+  const message = document.getElementById('reportMessage');
+  const results = document.getElementById('reportResults');
+  const exportButton = document.getElementById('reportExportBtn');
+  const params = new URLSearchParams();
+
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  if (village) params.set('village', village);
+
+  currentVillageReport = null;
+  exportButton.disabled = true;
+  results.hidden = true;
+  message.textContent = 'Generating report...';
+
+  try {
+    const res = await fetch(`${API_BASE}/reports/summary?${params.toString()}`, { headers: getAuthHeaders() });
+    const data = await res.json();
+    if (!res.ok) {
+      if (res.status === 401) throw new Error('Please sign in as an authorized staff member, then generate the report again.');
+      throw new Error(data.error || 'Failed to generate report.');
+    }
+
+    currentVillageReport = data.report;
+    renderVillageReport(data.report);
+    results.hidden = false;
+    exportButton.disabled = false;
+    message.textContent = `${data.report.totalFarmers} farmer registrations found.`;
+  } catch (error) {
+    message.textContent = error.message || 'Unable to generate report.';
+  }
+}
+
+function renderVillageReport(report) {
+  document.getElementById('reportTotalFarmers').textContent = report.totalFarmers;
+  document.getElementById('reportActiveFarmers').textContent = report.activeFarmers;
+  document.getElementById('reportPendingFarmers').textContent = report.pendingFarmers;
+  document.getElementById('reportExpiredFarmers').textContent = report.expiredFarmers;
+  document.getElementById('reportTotalArea').textContent = Number(report.totalAreaHectare).toFixed(2);
+  document.getElementById('reportVillageRows').innerHTML = report.villages.length
+    ? report.villages.map((village) => `
+        <tr>
+          <td>${escapeHtml(village.village)}</td>
+          <td>${village.totalFarmers}</td>
+          <td>${village.activeFarmers}</td>
+          <td>${village.pendingFarmers}</td>
+          <td>${village.expiredFarmers}</td>
+          <td>${Number(village.totalAreaHectare).toFixed(2)}</td>
+        </tr>
+      `).join('')
+    : '<tr><td colspan="6" class="text-muted">No registrations match these filters.</td></tr>';
+}
+
+function exportVillageReport() {
+  if (!currentVillageReport) return;
+  const rows = [
+    ['Village', 'Farmers', 'Active', 'Pending', 'Expired', 'Land (ha)'],
+    ...currentVillageReport.villages.map((village) => [
+      village.village,
+      village.totalFarmers,
+      village.activeFarmers,
+      village.pendingFarmers,
+      village.expiredFarmers,
+      Number(village.totalAreaHectare).toFixed(2)
+    ])
+  ];
+  const csvValue = (value) => {
+    const text = String(value ?? '');
+    const safeText = /^[=+\-@]/.test(text) ? `'${text}` : text;
+    return `"${safeText.replace(/"/g, '""')}"`;
+  };
+  const blob = new Blob([rows.map((row) => row.map(csvValue).join(',')).join('\r\n')], {
+    type: 'text/csv;charset=utf-8'
+  });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'kisan-village-report.csv';
+  link.click();
+  window.URL.revokeObjectURL(url);
+}
+
 function renderDashboard(stats) {
   document.getElementById('statTotalFarmers').innerText = stats.totalFarmers || 0;
   document.getElementById('statActiveFarmers').innerText = stats.activeFarmers || 0;
